@@ -1,0 +1,59 @@
+type Pair @entity {
+  id: ID!
+  decimals0: BigInt!
+  decimals1: BigInt!
+  reserve0: BigDecimal!
+  reserve1: BigDecimal!
+}
+
+type Bean @entity {
+  id: ID!
+  decimals: BigInt!
+  totalSupply: BigDecimal!
+  totalSupplyUSD: BigDecimal!
+  price: BigDecimal!
+  lastCross: BigInt!
+  crosses: [BigInt!]
+  totalCrosses: Int!
+  prices: [Price!]! @derivedFrom(field: "bean")
+  supplies: [Supply!]! @derivedFrom(field: "bean")
+  dayData: [DayData!]! @derivedFrom(field: "bean")
+  hourData: [HourData!]! @derivedFrom(field: "bean")
+}
+
+type Supply @entity {
+  id: ID!
+  bean: Bean!
+  timestamp: BigInt!
+  totalSupply: BigDecimal!
+  totalSupplyUSD: BigDecimal!
+}
+
+type Price @entity {
+  id: ID!
+  bean: Bean!
+  timestamp: BigInt!
+  price: BigDecimal!
+}
+
+type HourData @entity {
+  id: ID!
+  bean: Bean!
+  hourTimestamp: Int!
+  totalSupply: BigDecimal!
+  totalSupplyUSD: BigDecimal!
+  price: BigDecimal!
+  newCrosses: Int!
+  crosses: Int!
+}
+
+type DayData @entity {
+  id: ID!
+  bean: Bean!
+  dayTimestamp: Int!
+  totalSupply: BigDecimal!
+  totalSupplyUSD: BigDecimal!
+  price: BigDecimal!
+  newCrosses: Int!
+  crosses: Int!
+}
