@@ -1,5 +1,5 @@
 {
-  "name": "Bean Subgraph",
+  "name": "Bean-Subgraph",
   "license": "MIT License",
   "scripts": {
     "codegen": "graph codegen",
