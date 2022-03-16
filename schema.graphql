@@ -71,3 +71,32 @@ type Cross @entity {
   hourData: HourData!
   dayData: DayData!
 }
+
+type Curve @entity {
+  id: ID!
+  decimals: BigInt!
+  LP: BigDecimal!
+  reserve0: BigDecimal!
+  reserve1: BigDecimal!
+  dayDataCurve: [DayDataCurve!]! @derivedFrom(field: "curve")
+  hourDataCurve: [HourDataCurve!]! @derivedFrom(field: "curve")
+
+}
+
+type HourDataCurve @entity {
+  id: ID!
+  curve: Curve!
+  hourTimestamp: Int!
+  LP: BigDecimal!
+  reserve0: BigDecimal!
+  reserve1: BigDecimal!
+}
+
+type DayDataCurve @entity {
+  id: ID!
+  curve: Curve!
+  dayTimestamp: Int!
+  LP: BigDecimal!
+  reserve0: BigDecimal!
+  reserve1: BigDecimal!
+}

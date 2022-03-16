@@ -8,12 +8,17 @@ import {
   Sync,
   Transfer
 } from "../generated/BeanUniswapV2Pair/UniswapV2Pair"
-import { Pair, Bean, Supply, Price, DayData, HourData, Cross } from "../generated/schema"
+import {
+  Transfer
+} from "../generated/BEAN3CRV/ERC20"
+import { Pair, Bean, Supply, Price, DayData, HourData, Cross, DayDataCurve, HourDataCurve, Curve } from "../generated/schema"
 import { ADDRESS_ZERO, ZERO_BI, ONE_BI, ZERO_BD, ONE_BD, BI_6, BI_18, convertTokenToDecimal, exponentToBigDecimal } from "./helpers"
 
 let beanAddress = Address.fromString('0xdc59ac4fefa32293a95889dc396682858d52e5db')
 let beanPairAddress = Address.fromString('0x87898263b6c5babe34b4ec53f22d98430b91e371')
 let usdcPairAddress = Address.fromString('0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc')
+let crvAddress = Address.fromString('0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490')
+let curvePairAddress = Address.fromString('0x3a70DfA7d2262988064A2D051dd47521E43c9BdD')
 
 export function handleApproval(event: Approval): void {}
 
@@ -137,6 +142,63 @@ export function handleTransfer(event: Transfer): void {
     hourData.totalSupplyUSD = bean.totalSupplyUSD
     hourData.save()
   }
+
+/** Curve data */
+let curve = getCurve(event.block.timestamp)
+  let A = 10
+
+	if (event.params.from.toHexString() == ADDRESS_ZERO && event.address.toHexString() == curvePairAddress.toHexString()){
+		let value = convertTokenToDecimal(event.params.value, BI_18)       
+		curve.LP = curve.LP.plus(value)
+	}
+	if (event.params.to.toHexString() == ADDRESS_ZERO && event.address.toHexString() == curvePairAddress.toHexString()){
+		let value = convertTokenToDecimal(event.params.value, BI_18)
+		curve.LP = curve.LP.minus(value)
+	}
+	if (event.address.toHexString() == beanAddress.toHexString()){
+  	let reserve0 = convertTokenToDecimal(event.params.value, BI_6)
+  	if (event.params.to.toHexString() == curvePairAddress.toHexString()) curve.reserve0 = curve.reserve0.plus(reserve0)
+	  if (event.params.from.toHexString() == curvePairAddress.toHexString()) curve.reserve0 = curve.reserve0.minus(reserve0)
+	}
+	if (event.address.toHexString() == crvAddress.toHexString()){
+  	let reserve1 = convertTokenToDecimal(event.params.value, BI_18)
+    if (event.params.to.toHexString() == curvePairAddress.toHexString()) curve.reserve1 = curve.reserve1.plus(reserve1)
+    if (event.params.from.toHexString() == curvePairAddress.toHexString()) curve.reserve1 = curve.reserve1.minus(reserve1)
+  }
+  curve.save()
+
+    let timestamp = event.block.timestamp.toI32()
+    let dayId = timestamp / 86400
+    let hourId = timestamp / 3600
+
+    let dayDataCurve = getDayDataCurve(dayId, curve!)
+    dayDataCurve.LP = curve.LP
+    dayDataCurve.reserve0 = curve.reserve0
+    dayDataCurve.reserve1 = curve.reserve1
+    dayDataCurve.save()
+
+    let hourDataCurve = getHourDataCurve(hourId, curve!)
+    hourDataCurve.LP = curve.LP
+    hourDataCurve.reserve0 = curve.reserve0
+    hourDataCurve.reserve1 = curve.reserve1
+    hourDataCurve.save()
+    }  
+
+function getCurve(timestamp: BigInt) : Curve {
+  let curve = Curve.load(curvePairAddress.toHex())
+  if (curve == null) return initializeCurve(timestamp)
+  return curve as Curve!
+  // 
+}
+
+function initializeCurve(timestamp: BigInt) : Curve {
+  let curve = new Curve(curvePairAddress.toHex())
+  curve.decimals = BI_18
+  curve.LP = ZERO_BD
+  curve.reserve0 = ZERO_BD
+  curve.reserve1 = ZERO_BD
+  return curve
+
 }
 
 function initializePair(address: Address): Pair {
@@ -232,6 +294,42 @@ function initializeHourData(hourId : i32, bean : Bean) : HourData {
   // }
 
   return hourData
+}
+
+/** Curve function hour and day data */
+
+function getDayDataCurve(dayId : i32, curve : Curve) : DayDataCurve {
+  let dayDataCurve = DayDataCurve.load(dayId.toString())
+  if (dayDataCurve === null) dayDataCurve = initializeDayDataCurve(dayId, curve!)
+  return dayDataCurve as DayDataCurve!
+}
+
+function initializeDayDataCurve(dayId : i32, curve : Curve) : DayDataCurve {
+  let dayStartTimestamp = dayId * 86400
+  let dayDataCurve = new DayDataCurve(dayId.toString())
+  dayDataCurve.curve = curve.id
+  dayDataCurve.dayTimestamp = dayStartTimestamp
+  dayDataCurve.LP = curve.LP
+  dayDataCurve.reserve0 = curve.reserve0
+  dayDataCurve.reserve1 = curve.reserve1
+  return dayDataCurve
+}
+
+function getHourDataCurve(hourId: i32, curve : Curve) : HourDataCurve {
+  let hourDataCurve = HourDataCurve.load(hourId.toString())
+  if (hourDataCurve === null) hourDataCurve = initializeHourDataCurve(hourId, curve!)
+  return hourDataCurve as HourDataCurve!
+}
+
+function initializeHourDataCurve(hourId : i32, curve : Curve) : HourDataCurve {
+  let hourStartTimestamp = hourId * 3600
+  let hourDataCurve = new HourDataCurve(hourId.toString())
+  hourDataCurve.curve = curve.id
+  hourDataCurve.hourTimestamp = hourStartTimestamp
+  hourDataCurve.LP = curve.LP
+  hourDataCurve.reserve0 = curve.reserve0
+  hourDataCurve.reserve1 = curve.reserve1
+  return hourDataCurve
 }
 
 function createCross(id: i32, timestamp: i32, lastCross: i32, dayData: string, hourData: string, crossAbove: bool): void {
