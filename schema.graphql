@@ -16,6 +16,17 @@ type Bean @entity {
   totalCrosses: Int!
   totalTimeSinceCross: BigInt!
   startTime: Int!
+  curve3CRVLP: BigDecimal!
+  curveLUSDLP: BigDecimal!
+  curve3CRVLPUSD: BigDecimal!
+  curveLUSDLPUSD: BigDecimal! 
+  curveTotalLPUSD: BigDecimal!
+  curve3CRVVolumeUSD: BigDecimal!
+  curveLUSDVolumeUSD: BigDecimal!
+  curve3CRVLpUsage: BigDecimal!
+  curveLUSDLpUsage: BigDecimal!
+  curveSwapPrice3CRV: BigDecimal!
+  curveSwapPriceLUSD: BigDecimal!
   prices: [Price!]! @derivedFrom(field: "bean")
   supplies: [Supply!]! @derivedFrom(field: "bean")
   dayData: [DayData!]! @derivedFrom(field: "bean")
@@ -44,6 +55,17 @@ type HourData @entity {
   totalSupply: BigDecimal!
   totalSupplyUSD: BigDecimal!
   price: BigDecimal!
+  curve3CRVLP: BigDecimal!
+  curveLUSDLP: BigDecimal!
+  curve3CRVLPUSD: BigDecimal!
+  curveLUSDLPUSD: BigDecimal! 
+  curveTotalLPUSD: BigDecimal!
+  curve3CRVVolumeUSD: BigDecimal!
+  curveLUSDVolumeUSD: BigDecimal!
+  curve3CRVLpUsage: BigDecimal!
+  curveLUSDLpUsage: BigDecimal!
+  curveSwapPrice3CRV: BigDecimal!
+  curveSwapPriceLUSD: BigDecimal!
   newCrosses: Int!
   totalCrosses: Int!
   totalTimeSinceCross: BigInt!
@@ -57,6 +79,17 @@ type DayData @entity {
   totalSupply: BigDecimal!
   totalSupplyUSD: BigDecimal!
   price: BigDecimal!
+  curve3CRVLP: BigDecimal!
+  curveLUSDLP: BigDecimal!
+  curve3CRVLPUSD: BigDecimal!
+  curveLUSDLPUSD: BigDecimal! 
+  curveTotalLPUSD: BigDecimal!
+  curve3CRVVolumeUSD: BigDecimal!
+  curveLUSDVolumeUSD: BigDecimal!
+  curve3CRVLpUsage: BigDecimal!
+  curveLUSDLpUsage: BigDecimal!
+  curveSwapPrice3CRV: BigDecimal!
+  curveSwapPriceLUSD: BigDecimal!
   newCrosses: Int!
   totalCrosses: Int!
   totalTimeSinceCross: BigInt!
@@ -70,33 +103,4 @@ type Cross @entity {
   above: Boolean!
   hourData: HourData!
   dayData: DayData!
-}
-
-type Curve @entity {
-  id: ID!
-  decimals: BigInt!
-  LP: BigDecimal!
-  reserve0: BigDecimal!
-  reserve1: BigDecimal!
-  dayDataCurve: [DayDataCurve!]! @derivedFrom(field: "curve")
-  hourDataCurve: [HourDataCurve!]! @derivedFrom(field: "curve")
-
-}
-
-type HourDataCurve @entity {
-  id: ID!
-  curve: Curve!
-  hourTimestamp: Int!
-  LP: BigDecimal!
-  reserve0: BigDecimal!
-  reserve1: BigDecimal!
-}
-
-type DayDataCurve @entity {
-  id: ID!
-  curve: Curve!
-  dayTimestamp: Int!
-  LP: BigDecimal!
-  reserve0: BigDecimal!
-  reserve1: BigDecimal!
 }

@@ -90,7 +90,29 @@ dataSources:
         handler: handleTransfer
       file: ./src/mapping.ts
   - kind: ethereum/contract
-    name: BeanCurvePair
+    name: DAIUSDCUniswapV2Pair
+    network: mainnet
+    source:
+      address: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
+      abi: UniswapV2Pair
+      startBlock: 12974077
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - Sync
+      abis:
+        - name: UniswapV2Pair
+          file: ./abis/UniswapV2Pair.json
+        - name: ERC20
+          file: ./abis/ERC20.json
+      eventHandlers:
+        - event: Sync(uint112,uint112)
+          handler: handleSync
+      file: ./src/mapping.ts
+  - kind: ethereum/contract
+    name: Bean3CRVPair
     network: mainnet
     source:
       address: "0x3a70dfa7d2262988064a2d051dd47521e43c9bdd"
@@ -102,6 +124,8 @@ dataSources:
       language: wasm/assemblyscript
       entities:
         - Transfer
+        - TokenExchange
+        - TokenExchangeUnderlying
       abis:
         - name: BEAN3CRV
           file: ./abis/BEAN3CRV.json
@@ -110,13 +134,17 @@ dataSources:
       eventHandlers:
         - event: Transfer(indexed address,indexed address,uint256)
           handler: handleTransfer
-      file: ./src/mapping.ts    
+        - event: TokenExchangeUnderlying(indexed address,int128,uint256,int128,uint256)
+          handler: handleTokenExchangeUnderlying
+        - event: TokenExchange(indexed address,int128,uint256,int128,uint256)
+          handler: handleTokenExchange
+      file: ./src/mapping.ts
   - kind: ethereum/contract
-    name: CRV
+    name: Token3CRV
     network: mainnet
     source:
       address: "0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490"
-      abi: CRV
+      abi: Token3CRV
       startBlock: 13954026
     mapping:
       kind: ethereum/events
@@ -125,9 +153,97 @@ dataSources:
       entities:
         - Transfer
       abis:
-        - name: CRV
+        - name: Token3CRV
           file: ./abis/ERC20.json
       eventHandlers:
         - event: Transfer(indexed address,indexed address,uint256)
           handler: handleTransfer
+      file: ./src/mapping.ts
+  - kind: ethereum/contract
+    name: CURVE3Pool
+    network: mainnet
+    source:
+      address: "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7"
+      abi: CURVE3Pool
+      startBlock: 13954026
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - TokenExchange
+      abis:
+        - name: CURVE3Pool
+          file: ./abis/CURVE3Pool.json
+      eventHandlers:
+        - event: TokenExchange(indexed address,int128,uint256,int128,uint256)
+          handler: handleTokenExchange
+      file: ./src/mapping.ts
+  - kind: ethereum/contract
+    name: LUSD
+    network: mainnet
+    source:
+      address: "0x5f98805A4E8be255a32880FDeC7F6728C6568bA0"
+      abi: LUSD
+      startBlock: 14450086
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - Transfer
+      abis:
+        - name: LUSD
+          file: ./abis/ERC20.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+      file: ./src/mapping.ts
+  - kind: ethereum/contract
+    name: BeanLUSDPair
+    network: mainnet
+    source:
+      address: "0xD652c40fBb3f06d6B58Cb9aa9CFF063eE63d465D"
+      abi: BEANLUSD
+      startBlock: 14450086
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - Transfer
+        - TokenExchange
+      abis:
+        - name: BEANLUSD
+          file: ./abis/BEANLUSD.json
+        - name: ERC20
+          file: ./abis/ERC20.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+        - event: TokenExchange(indexed address,int128,uint256,int128,uint256)
+          handler: handleTokenExchange
+      file: ./src/mapping.ts
+  - kind: ethereum/contract
+    name: LUSD3Pool
+    network: mainnet
+    source:
+      address: "0xEd279fDD11cA84bEef15AF5D39BB4d4bEE23F0cA"
+      abi: LUSD3Pool
+      startBlock: 14450086
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - TokenExchange
+        - TokenExchangeUnderlying
+      abis:
+        - name: LUSD3Pool
+          file: ./abis/LUSD3Pool.json
+      eventHandlers:
+        - event: TokenExchange(indexed address,int128,uint256,int128,uint256)
+          handler: handleTokenExchange
+        - event: TokenExchangeUnderlying(indexed address,int128,uint256,int128,uint256)
+          handler: handleTokenExchangeUnderlying
       file: ./src/mapping.ts
