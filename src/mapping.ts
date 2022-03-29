@@ -218,7 +218,6 @@ export function handleTokenExchangeUnderlying(event: TokenExchangeUnderlying): v
   let DAI = BigInt.fromI32(1)
   let USDC = BigInt.fromI32(2)
   let USDT = BigInt.fromI32(3)
-  let x = BigDecimal.fromString('1')
   
   if (event.params.sold_id == LUSD && event.params.bought_id == DAI){
           curveLUSD = convertTokenToDecimal(event.params.tokens_sold, BI_18)
@@ -280,42 +279,42 @@ export function handleTokenExchangeUnderlying(event: TokenExchangeUnderlying): v
   let DAI = BigInt.fromI32(0)
   let USDC = BigInt.fromI32(1)
   let USDT = BigInt.fromI32(2)
-  let x = BigDecimal.fromString('1')
+  let one = BigDecimal.fromString('1')
   
     if (event.params.sold_id == DAI && event.params.bought_id == USDC){
        curveDAI = convertTokenToDecimal(event.params.tokens_sold, BI_18)
        bean.curveDAIPrice = curveDAI.div(convertTokenToDecimal(event.params.tokens_bought, BI_6))
-       bean.curveUSDCPrice = x / bean.curveDAIPrice
+       bean.curveUSDCPrice = one / bean.curveDAIPrice
        bean.save()
     }
     if (event.params.sold_id == DAI && event.params.bought_id == USDT){
        curveDAI = convertTokenToDecimal(event.params.tokens_sold, BI_18)
        bean.curveDAIPrice = curveDAI.div(convertTokenToDecimal(event.params.tokens_bought, BI_6))
-       bean.curveUSDTPrice = x / bean.curveDAIPrice
+       bean.curveUSDTPrice = one / bean.curveDAIPrice
        bean.save()
     }
     if (event.params.sold_id == USDT && event.params.bought_id == USDC){
        curveUSDT = convertTokenToDecimal(event.params.tokens_sold, BI_6)
        bean.curveUSDTPrice = curveUSDT.div(convertTokenToDecimal(event.params.tokens_bought, BI_6))
-       bean.curveUSDCPrice = x / bean.curveUSDTPrice
+       bean.curveUSDCPrice = one / bean.curveUSDTPrice
        bean.save()
     }
     if (event.params.sold_id == USDC && event.params.bought_id == DAI){
        curveUSDC = convertTokenToDecimal(event.params.tokens_sold, BI_6)
        bean.curveUSDCPrice = curveUSDC.div(convertTokenToDecimal(event.params.tokens_bought, BI_18))
-       bean.curveDAIPrice = x / bean.curveUSDCPrice
+       bean.curveDAIPrice = one / bean.curveUSDCPrice
        bean.save()
     }
     if (event.params.sold_id == USDT && event.params.bought_id == DAI){
        curveUSDT = convertTokenToDecimal(event.params.tokens_sold, BI_6)
        bean.curveUSDTPrice = curveUSDT.div(convertTokenToDecimal(event.params.tokens_bought, BI_18))
-       bean.curveDAIPrice = x / bean.curveUSDTPrice
+       bean.curveDAIPrice = one / bean.curveUSDTPrice
        bean.save()
     }
     if (event.params.sold_id == USDC && event.params.bought_id == USDT){
        curveUSDC = convertTokenToDecimal(event.params.tokens_sold, BI_6)
        bean.curveUSDCPrice = curveUSDC.div(convertTokenToDecimal(event.params.tokens_bought, BI_6))
-       bean.curveUSDTPrice = x / bean.curveUSDCPrice
+       bean.curveUSDTPrice = one / bean.curveUSDCPrice
        bean.save()
     }
   
@@ -426,8 +425,7 @@ export function handleTokenExchangeUnderlying(event: TokenExchangeUnderlying): v
   let DAI = BigInt.fromI32(1)
   let USDC = BigInt.fromI32(2)
   let USDT = BigInt.fromI32(3)
-  let x = BigDecimal.fromString('1')
-  
+   
     if (event.params.sold_id == LUSD && event.params.bought_id == DAI){
        curveLUSD = convertTokenToDecimal(event.params.tokens_sold, BI_18)
        bean.curveLUSDPrice = curveLUSD.div((convertTokenToDecimal(event.params.tokens_bought, BI_18)) * bean.curveDAIPrice)
