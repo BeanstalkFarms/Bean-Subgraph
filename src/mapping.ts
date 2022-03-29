@@ -36,8 +36,6 @@ let beanlusdPairAddress = Address.fromString('0xD652c40fBb3f06d6B58Cb9aa9CFF063e
 //uniswap pairs
 let beanPairAddress = Address.fromString('0x87898263b6c5babe34b4ec53f22d98430b91e371')
 let usdcPairAddress = Address.fromString('0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc')
-let usdtPairAddress = Address.fromString('0x0d4a11d5eeaac28ec3f61d100daf4d40471f1852')
-let daiusdcPairAddress = Address.fromString('0xae461ca67b15dc8dc81ce7615e0320da1a9ab8d5')
 
 export function handleApproval(event: Approval): void {}
 
@@ -651,7 +649,7 @@ export function handleTransfer(event: Transfer): void {
 
 function initializePair(address: Address): Pair {
   let pair = new Pair(address.toHex())
-  if (address.toHexString() == beanPairAddress.toHexString() || address.toHexString() == daiusdcPairAddress.toHexString()) {
+  if (address.toHexString() == beanPairAddress.toHexString()) {
     pair.decimals0 = BI_18
     pair.decimals1 = BI_6
   } else {
