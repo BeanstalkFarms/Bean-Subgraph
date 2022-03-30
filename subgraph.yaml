@@ -90,28 +90,6 @@ dataSources:
         handler: handleTransfer
       file: ./src/mapping.ts
   - kind: ethereum/contract
-    name: DAIUSDCUniswapV2Pair
-    network: mainnet
-    source:
-      address: "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"
-      abi: UniswapV2Pair
-      startBlock: 12974077
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.5
-      language: wasm/assemblyscript
-      entities:
-        - Sync
-      abis:
-        - name: UniswapV2Pair
-          file: ./abis/UniswapV2Pair.json
-        - name: ERC20
-          file: ./abis/ERC20.json
-      eventHandlers:
-        - event: Sync(uint112,uint112)
-          handler: handleSync
-      file: ./src/mapping.ts
-  - kind: ethereum/contract
     name: Bean3CRVPair
     network: mainnet
     source:
