@@ -12,9 +12,6 @@ import {
   TokenExchangeUnderlying,
   TokenExchange
 } from "../generated/Bean3CRVPair/BEAN3CRV"
-import {
-  TokenExchange
-} from "../generated/BeanLUSDPair/BEANLUSD"
 import { Pair, Bean, Supply, Price, DayData, HourData, Cross } from "../generated/schema"
 import { ADDRESS_ZERO, ZERO_BI, ONE_BI, ZERO_BD, ONE_BD, BI_6, BI_18, convertTokenToDecimal, exponentToBigDecimal } from "./helpers"
 
@@ -139,40 +136,46 @@ export function handleTokenExchangeUnderlying(event: TokenExchangeUnderlying): v
   if (event.params.sold_id == DAI && event.params.bought_id == BEAN){
           curveDAI = convertTokenToDecimal(event.params.tokens_sold, BI_18)
           bean.curve3CRVVolume = convertTokenToDecimal(event.params.tokens_bought, BI_6)
+          if (curveDAI == ZERO_BD || bean.curve3CRVVolume == ZERO_BD) return
           bean.curveSwapPrice3CRV = (curveDAI * bean.curveDAIPrice).div(bean.curve3CRVVolume)
           bean.save()
-          }
+  }
   if (event.params.sold_id == USDC && event.params.bought_id == BEAN){
           curveUSDC = convertTokenToDecimal(event.params.tokens_sold, BI_6)
           bean.curve3CRVVolume = convertTokenToDecimal(event.params.tokens_bought, BI_6)
+          if (curveUSDC == ZERO_BD || bean.curve3CRVVolume == ZERO_BD) return
           bean.curveSwapPrice3CRV = (curveUSDC * bean.curveUSDCPrice).div(bean.curve3CRVVolume)
           bean.save()
-          }
+  }
   if (event.params.sold_id == USDT && event.params.bought_id == BEAN){
           curveUSDT = convertTokenToDecimal(event.params.tokens_sold, BI_6)
           bean.curve3CRVVolume = convertTokenToDecimal(event.params.tokens_bought, BI_6)
+          if (curveUSDT == ZERO_BD || bean.curve3CRVVolume == ZERO_BD) return
           bean.curveSwapPrice3CRV = (curveUSDT * bean.curveUSDTPrice).div(bean.curve3CRVVolume)
           bean.save()
-          }
+  }
   
   if (event.params.sold_id == BEAN && event.params.bought_id == DAI){
           bean.curve3CRVVolume = convertTokenToDecimal(event.params.tokens_sold, BI_6)
           curveDAI = convertTokenToDecimal(event.params.tokens_bought, BI_18)
+          if (curveDAI == ZERO_BD || bean.curve3CRVVolume == ZERO_BD) return
           bean.curveSwapPrice3CRV = bean.curve3CRVVolume.div(curveDAI * bean.curveDAIPrice)
           bean.save()
-          }
+  }
   if (event.params.sold_id == BEAN && event.params.bought_id == USDC){
           bean.curve3CRVVolume = convertTokenToDecimal(event.params.tokens_sold, BI_6)
           curveUSDC = convertTokenToDecimal(event.params.tokens_bought, BI_6)
+          if (curveUSDC == ZERO_BD || bean.curve3CRVVolume == ZERO_BD) return
           bean.curveSwapPrice3CRV = bean.curve3CRVVolume.div(curveUSDC * bean.curveUSDCPrice)
           bean.save()
-          }
+  }
   if (event.params.sold_id == BEAN && event.params.bought_id == USDT){
           bean.curve3CRVVolume = convertTokenToDecimal(event.params.tokens_sold, BI_6)
           curveUSDT = convertTokenToDecimal(event.params.tokens_bought, BI_6)
+          if (curveUSDT == ZERO_BD || bean.curve3CRVVolume == ZERO_BD) return
           bean.curveSwapPrice3CRV = bean.curve3CRVVolume.div(curveUSDT * bean.curveUSDTPrice)
           bean.save()
-          }
+  }
   
   //let bean3crv = BEAN3CRV.bind(event.address)
   //let callResult = bean3crv.try_get_virtual_price()
@@ -187,7 +190,7 @@ export function handleTokenExchangeUnderlying(event: TokenExchangeUnderlying): v
       let dayId = timestamp / 86400
       let hourId = timestamp / 3600
   
-     let dayData = getDayData(dayId, bean!)
+      let dayData = getDayData(dayId, bean!)
       dayData.curveSwapPrice3CRV = bean.curveSwapPrice3CRV
       dayData.curve3CRVLP = bean.curve3CRVLP
       dayData.curve3CRVVolume = dayData.curve3CRVVolume.plus(bean.curve3CRVVolume)
@@ -219,33 +222,45 @@ export function handleTokenExchangeUnderlying(event: TokenExchangeUnderlying): v
   
   if (event.params.sold_id == LUSD && event.params.bought_id == DAI){
           curveLUSD = convertTokenToDecimal(event.params.tokens_sold, BI_18)
-          bean.curveLUSDPrice = curveLUSD.div((convertTokenToDecimal(event.params.tokens_bought, BI_18)) * bean.curveDAIPrice)
+          curveDAI = convertTokenToDecimal(event.params.tokens_bought, BI_18)
+          if (curveLUSD == ZERO_BD || curveDAI == ZERO_BD) return
+          bean.curveLUSDPrice = curveLUSD.div(curveDAI * bean.curveDAIPrice)
           bean.save()
           }
   if (event.params.sold_id == LUSD && event.params.bought_id == USDT){
           curveLUSD = convertTokenToDecimal(event.params.tokens_sold, BI_18)
-           bean.curveLUSDPrice = curveLUSD.div((convertTokenToDecimal(event.params.tokens_bought, BI_6)) * bean.curveUSDTPrice)
+          curveUSDT = convertTokenToDecimal(event.params.tokens_bought, BI_6)
+          if (curveLUSD == ZERO_BD || curveUSDT == ZERO_BD) return
+          bean.curveLUSDPrice = curveLUSD.div(curveUSDT * bean.curveUSDTPrice)
           bean.save()
           }
   if (event.params.sold_id == LUSD && event.params.bought_id == USDC){
           curveLUSD = convertTokenToDecimal(event.params.tokens_sold, BI_18)
-          bean.curveLUSDPrice = curveLUSD.div((convertTokenToDecimal(event.params.tokens_bought, BI_6)) * bean.curveUSDCPrice)
+          curveUSDC = convertTokenToDecimal(event.params.tokens_bought, BI_6)
+          if (curveLUSD == ZERO_BD || curveUSDC == ZERO_BD) return
+          bean.curveLUSDPrice = curveLUSD.div(curveUSDC * bean.curveUSDCPrice)
           bean.save()
           }
   
   if (event.params.sold_id == DAI && event.params.bought_id == LUSD){
           curveDAI = convertTokenToDecimal(event.params.tokens_sold, BI_18)
-          bean.curveLUSDPrice = (curveDAI * bean.curveDAIPrice).div(convertTokenToDecimal(event.params.tokens_bought, BI_18))
+          curveLUSD = convertTokenToDecimal(event.params.tokens_bought, BI_18)
+          if (curveLUSD == ZERO_BD || curveDAI == ZERO_BD) return
+          bean.curveLUSDPrice = (curveDAI * bean.curveDAIPrice).div(curveLUSD)
           bean.save()
           }
   if (event.params.sold_id == USDT && event.params.bought_id == LUSD){
-           curveUSDT = convertTokenToDecimal(event.params.tokens_sold, BI_6)
-           bean.curveLUSDPrice = (curveUSDT * bean.curveUSDTPrice).div(convertTokenToDecimal(event.params.tokens_bought, BI_18))
+          curveUSDT = convertTokenToDecimal(event.params.tokens_sold, BI_6)
+          curveLUSD = convertTokenToDecimal(event.params.tokens_bought, BI_18)
+          if (curveLUSD == ZERO_BD || curveUSDT == ZERO_BD) return
+          bean.curveLUSDPrice = (curveUSDT * bean.curveUSDTPrice).div(curveLUSD)
           bean.save()
           }
   if (event.params.sold_id == USDC && event.params.bought_id == LUSD){
           curveUSDC = convertTokenToDecimal(event.params.tokens_sold, BI_6)
-          bean.curveLUSDPrice = (curveUSDC * bean.curveUSDCPrice).div(convertTokenToDecimal(event.params.tokens_bought, BI_18))
+          curveLUSD = convertTokenToDecimal(event.params.tokens_bought, BI_18)
+          if (curveLUSD == ZERO_BD || curveUSDC == ZERO_BD) return
+          bean.curveLUSDPrice = (curveUSDC * bean.curveUSDCPrice).div(curveLUSD)
           bean.save()
           }
   
@@ -281,37 +296,49 @@ export function handleTokenExchangeUnderlying(event: TokenExchangeUnderlying): v
   
     if (event.params.sold_id == DAI && event.params.bought_id == USDC){
        curveDAI = convertTokenToDecimal(event.params.tokens_sold, BI_18)
-       bean.curveDAIPrice = curveDAI.div(convertTokenToDecimal(event.params.tokens_bought, BI_6))
+       curveUSDC = convertTokenToDecimal(event.params.tokens_bought, BI_6)
+       if (curveDAI == ZERO_BD || curveUSDC == ZERO_BD) return
+       bean.curveDAIPrice = curveDAI.div(curveUSDC)
        bean.curveUSDCPrice = one / bean.curveDAIPrice
        bean.save()
     }
     if (event.params.sold_id == DAI && event.params.bought_id == USDT){
        curveDAI = convertTokenToDecimal(event.params.tokens_sold, BI_18)
-       bean.curveDAIPrice = curveDAI.div(convertTokenToDecimal(event.params.tokens_bought, BI_6))
+       curveUSDT = convertTokenToDecimal(event.params.tokens_bought, BI_6)
+       if (curveDAI == ZERO_BD || curveUSDT == ZERO_BD) return
+       bean.curveDAIPrice = curveDAI.div(curveUSDT)
        bean.curveUSDTPrice = one / bean.curveDAIPrice
        bean.save()
     }
     if (event.params.sold_id == USDT && event.params.bought_id == USDC){
        curveUSDT = convertTokenToDecimal(event.params.tokens_sold, BI_6)
-       bean.curveUSDTPrice = curveUSDT.div(convertTokenToDecimal(event.params.tokens_bought, BI_6))
+       curveUSDC = convertTokenToDecimal(event.params.tokens_bought, BI_6)
+       if (curveUSDT == ZERO_BD || curveUSDC == ZERO_BD) return
+       bean.curveUSDTPrice = curveUSDT.div(curveUSDC)
        bean.curveUSDCPrice = one / bean.curveUSDTPrice
        bean.save()
     }
     if (event.params.sold_id == USDC && event.params.bought_id == DAI){
        curveUSDC = convertTokenToDecimal(event.params.tokens_sold, BI_6)
-       bean.curveUSDCPrice = curveUSDC.div(convertTokenToDecimal(event.params.tokens_bought, BI_18))
+       curveDAI = convertTokenToDecimal(event.params.tokens_bought, BI_18)
+       if (curveDAI == ZERO_BD || curveUSDC == ZERO_BD) return
+       bean.curveUSDCPrice = curveUSDC.div(curveDAI)
        bean.curveDAIPrice = one / bean.curveUSDCPrice
        bean.save()
     }
     if (event.params.sold_id == USDT && event.params.bought_id == DAI){
        curveUSDT = convertTokenToDecimal(event.params.tokens_sold, BI_6)
-       bean.curveUSDTPrice = curveUSDT.div(convertTokenToDecimal(event.params.tokens_bought, BI_18))
+       curveDAI = convertTokenToDecimal(event.params.tokens_bought, BI_18)
+       if (curveDAI == ZERO_BD || curveUSDT == ZERO_BD) return
+       bean.curveUSDTPrice = curveUSDT.div(curveDAI)
        bean.curveDAIPrice = one / bean.curveUSDTPrice
        bean.save()
     }
     if (event.params.sold_id == USDC && event.params.bought_id == USDT){
        curveUSDC = convertTokenToDecimal(event.params.tokens_sold, BI_6)
-       bean.curveUSDCPrice = curveUSDC.div(convertTokenToDecimal(event.params.tokens_bought, BI_6))
+       curveUSDT = convertTokenToDecimal(event.params.tokens_bought, BI_6)
+       if (curveUSDT == ZERO_BD || curveUSDC == ZERO_BD) return
+       bean.curveUSDCPrice = curveUSDC.div(curveUSDT)
        bean.curveUSDTPrice = one / bean.curveUSDCPrice
        bean.save()
     }
@@ -343,43 +370,49 @@ export function handleTokenExchangeUnderlying(event: TokenExchangeUnderlying): v
   let USDC = BigInt.fromI32(2)
   let USDT = BigInt.fromI32(3)
   
-    if (event.params.sold_id == DAI && event.params.bought_id == BEAN){
-       curveDAI = convertTokenToDecimal(event.params.tokens_sold, BI_18)
-       bean.curve3CRVVolume = convertTokenToDecimal(event.params.tokens_bought, BI_6)
-       bean.curveSwapPrice3CRV = (curveDAI * bean.curveDAIPrice).div(bean.curve3CRVVolume)
-       bean.save()
-    }
-    if (event.params.sold_id == USDC && event.params.bought_id == BEAN){
-       curveUSDC = convertTokenToDecimal(event.params.tokens_sold, BI_6)
-       bean.curve3CRVVolume = convertTokenToDecimal(event.params.tokens_bought, BI_6)
-       bean.curveSwapPrice3CRV = (curveUSDC * bean.curveUSDCPrice).div(bean.curve3CRVVolume)
-       bean.save()
-    }
-    if (event.params.sold_id == USDT && event.params.bought_id == BEAN){
-       curveUSDT = convertTokenToDecimal(event.params.tokens_sold, BI_6)
-       bean.curve3CRVVolume = convertTokenToDecimal(event.params.tokens_bought, BI_6)
-       bean.curveSwapPrice3CRV = (curveUSDT * bean.curveUSDTPrice).div(bean.curve3CRVVolume)
-       bean.save()
-    }
-    
-    if (event.params.sold_id == BEAN && event.params.bought_id == DAI){
-       bean.curve3CRVVolume = convertTokenToDecimal(event.params.tokens_sold, BI_6)
-       curveDAI = convertTokenToDecimal(event.params.tokens_bought, BI_18)
-       bean.curveSwapPrice3CRV = bean.curve3CRVVolume.div(curveDAI * bean.curveDAIPrice)
-       bean.save()
-    }
-    if (event.params.sold_id == BEAN && event.params.bought_id == USDC){
-       bean.curve3CRVVolume = convertTokenToDecimal(event.params.tokens_sold, BI_6)
-       curveUSDC = convertTokenToDecimal(event.params.tokens_bought, BI_6)
-       bean.curveSwapPrice3CRV = bean.curve3CRVVolume.div(curveUSDC * bean.curveUSDCPrice)
-       bean.save()
-    }
-    if (event.params.sold_id == BEAN && event.params.bought_id == USDT){
-       bean.curve3CRVVolume = convertTokenToDecimal(event.params.tokens_sold, BI_6)
-       curveUSDT = convertTokenToDecimal(event.params.tokens_bought, BI_6)
-       bean.curveSwapPrice3CRV = bean.curve3CRVVolume.div(curveUSDT * bean.curveUSDTPrice)
-       bean.save()
-    }
+  if (event.params.sold_id == DAI && event.params.bought_id == BEAN){
+    curveDAI = convertTokenToDecimal(event.params.tokens_sold, BI_18)
+    bean.curve3CRVVolume = convertTokenToDecimal(event.params.tokens_bought, BI_6)
+    if (curveDAI == ZERO_BD || bean.curve3CRVVolume == ZERO_BD) return
+    bean.curveSwapPrice3CRV = (curveDAI * bean.curveDAIPrice).div(bean.curve3CRVVolume)
+    bean.save()
+}
+if (event.params.sold_id == USDC && event.params.bought_id == BEAN){
+    curveUSDC = convertTokenToDecimal(event.params.tokens_sold, BI_6)
+    bean.curve3CRVVolume = convertTokenToDecimal(event.params.tokens_bought, BI_6)
+    if (curveUSDC == ZERO_BD || bean.curve3CRVVolume == ZERO_BD) return
+    bean.curveSwapPrice3CRV = (curveUSDC * bean.curveUSDCPrice).div(bean.curve3CRVVolume)
+    bean.save()
+}
+if (event.params.sold_id == USDT && event.params.bought_id == BEAN){
+    curveUSDT = convertTokenToDecimal(event.params.tokens_sold, BI_6)
+    bean.curve3CRVVolume = convertTokenToDecimal(event.params.tokens_bought, BI_6)
+    if (curveUSDT == ZERO_BD || bean.curve3CRVVolume == ZERO_BD) return
+    bean.curveSwapPrice3CRV = (curveUSDT * bean.curveUSDTPrice).div(bean.curve3CRVVolume)
+    bean.save()
+}
+
+if (event.params.sold_id == BEAN && event.params.bought_id == DAI){
+    bean.curve3CRVVolume = convertTokenToDecimal(event.params.tokens_sold, BI_6)
+    curveDAI = convertTokenToDecimal(event.params.tokens_bought, BI_18)
+    if (curveDAI == ZERO_BD || bean.curve3CRVVolume == ZERO_BD) return
+    bean.curveSwapPrice3CRV = bean.curve3CRVVolume.div(curveDAI * bean.curveDAIPrice)
+    bean.save()
+}
+if (event.params.sold_id == BEAN && event.params.bought_id == USDC){
+    bean.curve3CRVVolume = convertTokenToDecimal(event.params.tokens_sold, BI_6)
+    curveUSDC = convertTokenToDecimal(event.params.tokens_bought, BI_6)
+    if (curveUSDC == ZERO_BD || bean.curve3CRVVolume == ZERO_BD) return
+    bean.curveSwapPrice3CRV = bean.curve3CRVVolume.div(curveUSDC * bean.curveUSDCPrice)
+    bean.save()
+}
+if (event.params.sold_id == BEAN && event.params.bought_id == USDT){
+    bean.curve3CRVVolume = convertTokenToDecimal(event.params.tokens_sold, BI_6)
+    curveUSDT = convertTokenToDecimal(event.params.tokens_bought, BI_6)
+    if (curveUSDT == ZERO_BD || bean.curve3CRVVolume == ZERO_BD) return
+    bean.curveSwapPrice3CRV = bean.curve3CRVVolume.div(curveUSDT * bean.curveUSDTPrice)
+    bean.save()
+}
   
   //let bean3crv = BEAN3CRV.bind(event.address)
   //let callResult = bean3crv.try_get_virtual_price()
@@ -426,33 +459,45 @@ export function handleTokenExchangeUnderlying(event: TokenExchangeUnderlying): v
    
     if (event.params.sold_id == LUSD && event.params.bought_id == DAI){
        curveLUSD = convertTokenToDecimal(event.params.tokens_sold, BI_18)
-       bean.curveLUSDPrice = curveLUSD.div((convertTokenToDecimal(event.params.tokens_bought, BI_18)) * bean.curveDAIPrice)
+       curveDAI = convertTokenToDecimal(event.params.tokens_bought, BI_18)
+       if (curveLUSD == ZERO_BD || curveDAI == ZERO_BD) return
+       bean.curveLUSDPrice = curveLUSD.div(curveDAI * bean.curveDAIPrice)
        bean.save()
     }
     if (event.params.sold_id == LUSD && event.params.bought_id == USDT){
        curveLUSD = convertTokenToDecimal(event.params.tokens_sold, BI_18)
-       bean.curveLUSDPrice = curveLUSD.div((convertTokenToDecimal(event.params.tokens_bought, BI_6)) * bean.curveUSDTPrice)
+       curveUSDT = convertTokenToDecimal(event.params.tokens_bought, BI_6)
+       if (curveLUSD == ZERO_BD || curveUSDT == ZERO_BD) return
+       bean.curveLUSDPrice = curveLUSD.div(curveUSDT * bean.curveUSDTPrice)
        bean.save()
     }
     if (event.params.sold_id == LUSD && event.params.bought_id == USDC){
        curveLUSD = convertTokenToDecimal(event.params.tokens_sold, BI_18)
-       bean.curveLUSDPrice = curveLUSD.div((convertTokenToDecimal(event.params.tokens_bought, BI_6)) * bean.curveUSDCPrice)
+       curveUSDC = convertTokenToDecimal(event.params.tokens_bought, BI_6)
+       if (curveLUSD == ZERO_BD || curveUSDC == ZERO_BD) return
+       bean.curveLUSDPrice = curveLUSD.div(curveUSDC * bean.curveUSDCPrice)
        bean.save()
     }
     
     if (event.params.sold_id == DAI && event.params.bought_id == LUSD){
        curveDAI = convertTokenToDecimal(event.params.tokens_sold, BI_18)
-       bean.curveLUSDPrice = (curveDAI * bean.curveDAIPrice).div(convertTokenToDecimal(event.params.tokens_bought, BI_18))
+       curveLUSD = convertTokenToDecimal(event.params.tokens_bought, BI_18)
+       if (curveLUSD == ZERO_BD || curveUSDT == ZERO_BD) return
+       bean.curveLUSDPrice = (curveDAI * bean.curveDAIPrice).div(curveLUSD)
        bean.save()
     }
     if (event.params.sold_id == USDT && event.params.bought_id == LUSD){
        curveUSDT = convertTokenToDecimal(event.params.tokens_sold, BI_6)
-       bean.curveLUSDPrice = (curveUSDT * bean.curveUSDTPrice).div(convertTokenToDecimal(event.params.tokens_bought, BI_18))
+       curveLUSD = convertTokenToDecimal(event.params.tokens_bought, BI_18)
+       if (curveLUSD == ZERO_BD || curveUSDT == ZERO_BD) return
+       bean.curveLUSDPrice = (curveUSDT * bean.curveUSDTPrice).div(curveLUSD)
        bean.save()
     }
     if (event.params.sold_id == USDC && event.params.bought_id == LUSD){
        curveUSDC = convertTokenToDecimal(event.params.tokens_sold, BI_6)
-       bean.curveLUSDPrice = (curveUSDC * bean.curveUSDCPrice).div(convertTokenToDecimal(event.params.tokens_bought, BI_18))
+       curveLUSD = convertTokenToDecimal(event.params.tokens_bought, BI_6)
+       if (curveLUSD == ZERO_BD || curveUSDC == ZERO_BD) return
+       bean.curveLUSDPrice = (curveUSDC * bean.curveUSDCPrice).div(curveLUSD)
        bean.save()
     }
   
@@ -480,6 +525,7 @@ export function handleTokenExchangeUnderlying(event: TokenExchangeUnderlying): v
     if (event.params.sold_id == BEAN && event.params.bought_id == LUSD){
        bean.curveLUSDVolume = convertTokenToDecimal(event.params.tokens_sold, BI_6)
        curveLUSD = convertTokenToDecimal(event.params.tokens_bought, BI_18)
+       if (curveLUSD == ZERO_BD || bean.curveLUSDVolume == ZERO_BD) return
        bean.curveSwapPriceLUSD = bean.curveLUSDVolume.div(curveLUSD * bean.curveLUSDPrice)
        bean.save()
     }
@@ -487,6 +533,7 @@ export function handleTokenExchangeUnderlying(event: TokenExchangeUnderlying): v
     if (event.params.sold_id == LUSD && event.params.bought_id == BEAN){
        bean.curveLUSDVolume = convertTokenToDecimal(event.params.tokens_bought, BI_6)
        curveLUSD = convertTokenToDecimal(event.params.tokens_sold, BI_18)
+       if (curveLUSD == ZERO_BD || bean.curveLUSDVolume == ZERO_BD) return
        bean.curveSwapPriceLUSD = (curveLUSD * bean.curveLUSDPrice).div(bean.curveLUSDVolume)
        bean.save()
     }
