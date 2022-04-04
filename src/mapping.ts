@@ -571,7 +571,7 @@ if (event.params.sold_id == BEAN && event.params.bought_id == USDT){
 
 export function handleTransfer(event: Transfer): void {
 
-  if(event.address.toHexString() != beanAddress.toHexString()) return
+  if(event.address.toHexString() == beanAddress.toHexString()) {
 
   if (event.params.from.toHexString() == ADDRESS_ZERO || event.params.to.toHexString() == ADDRESS_ZERO) {
     let bean = getBean(event.block.timestamp)
@@ -611,6 +611,7 @@ export function handleTransfer(event: Transfer): void {
     hourData.totalSupply = bean.totalSupply
     hourData.totalSupplyUSD = bean.totalSupplyUSD
     hourData.save()
+  }
   }
 
   // curve metrics
