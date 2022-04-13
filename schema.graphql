@@ -1,36 +1,39 @@
-type Pair @entity {
-  id: ID!
-  decimals0: BigInt!
-  decimals1: BigInt!
-  reserve0: BigDecimal!
-  reserve1: BigDecimal!
-}
-
 type Bean @entity {
   id: ID!
   decimals: BigInt!
   totalSupply: BigDecimal!
   totalSupplyUSD: BigDecimal!
-  price: BigDecimal!
+  pools: [Pool!]! @derivedFrom(field: "bean") # The pools containing the Bean token 
+  supplies: [Supply!]! @derivedFrom(field: "bean")
+  beandayData: [BeanDayData!]! @derivedFrom(field: "bean")
+  beanhourData: [BeanHourData!]! @derivedFrom(field: "bean")
+}
+
+type Pool @entity {
+  id: ID! # The address of the pool.
+  bean: Bean!
+  token0: ID! # The address of the Tokens in the pool.
+  token1: ID! # The address of the Tokens in the pool.
+  reserve0: BigDecimal! # The reserves in the pool.
+  reserve1: BigDecimal! # The reserves in the pool.
+  price: BigDecimal! # Price of Bean in USD in the pool.
+  liquidity: BigDecimal! # Value of liquidity in tokens.
+  liquidityUSD: BigDecimal! # Value of liquidity in USD.
+  volumeBean: BigDecimal! # Volume in the pool in Bean.
+  volumeUSD: BigDecimal! # Volume in the pool in USD.
+  utilisation: BigDecimal! # The liquidity utilization.
+  delta: BigDecimal! # The # of Beans above/below peg.
+  invariant: BigDecimal! # invariant of curve pool to calculate 3CRV prices.
+  tokensupply: BigDecimal! # LP of curve pool to calculate 3CRV prices.
+  amount1: BigDecimal! # 3CRV token amount exchanged againt Bean to calculate price.
   lastCross: BigInt!
   totalCrosses: Int!
   totalTimeSinceCross: BigInt!
   startTime: Int!
-  curve3CRVLP: BigDecimal!
-  curveLUSDLP: BigDecimal!
-  curve3CRVLPUSD: BigDecimal!
-  curveLUSDLPUSD: BigDecimal! 
-  curveTotalLPUSD: BigDecimal!
-  curve3CRVVolumeUSD: BigDecimal!
-  curveLUSDVolumeUSD: BigDecimal!
-  curve3CRVLpUsage: BigDecimal!
-  curveLUSDLpUsage: BigDecimal!
-  curveSwapPrice3CRV: BigDecimal!
-  curveSwapPriceLUSD: BigDecimal!
-  prices: [Price!]! @derivedFrom(field: "bean")
-  supplies: [Supply!]! @derivedFrom(field: "bean")
-  dayData: [DayData!]! @derivedFrom(field: "bean")
-  hourData: [HourData!]! @derivedFrom(field: "bean")
+  txn: ID!
+  prices: [Price!]! @derivedFrom(field: "pool")
+  pooldayData: [PoolDayData!]! @derivedFrom(field: "pool")
+  poolhourData: [PoolHourData!]! @derivedFrom(field: "pool")
 }
 
 type Supply @entity {
@@ -43,57 +46,77 @@ type Supply @entity {
 
 type Price @entity {
   id: ID!
-  bean: Bean!
+  pool: Pool!
   timestamp: BigInt!
   price: BigDecimal!
 }
 
-type HourData @entity {
+type BeanHourData @entity {
   id: ID!
   bean: Bean!
   hourTimestamp: Int!
   totalSupply: BigDecimal!
   totalSupplyUSD: BigDecimal!
-  price: BigDecimal!
-  curve3CRVLP: BigDecimal!
-  curveLUSDLP: BigDecimal!
-  curve3CRVLPUSD: BigDecimal!
-  curveLUSDLPUSD: BigDecimal! 
-  curveTotalLPUSD: BigDecimal!
-  curve3CRVVolumeUSD: BigDecimal!
-  curveLUSDVolumeUSD: BigDecimal!
-  curve3CRVLpUsage: BigDecimal!
-  curveLUSDLpUsage: BigDecimal!
-  curveSwapPrice3CRV: BigDecimal!
-  curveSwapPriceLUSD: BigDecimal!
-  newCrosses: Int!
-  totalCrosses: Int!
-  totalTimeSinceCross: BigInt!
-  crosses: [Cross!]! @derivedFrom(field: "hourData")
 }
 
-type DayData @entity {
+type BeanDayData @entity {
   id: ID!
   bean: Bean!
   dayTimestamp: Int!
   totalSupply: BigDecimal!
   totalSupplyUSD: BigDecimal!
-  price: BigDecimal!
-  curve3CRVLP: BigDecimal!
-  curveLUSDLP: BigDecimal!
-  curve3CRVLPUSD: BigDecimal!
-  curveLUSDLPUSD: BigDecimal! 
-  curveTotalLPUSD: BigDecimal!
-  curve3CRVVolumeUSD: BigDecimal!
-  curveLUSDVolumeUSD: BigDecimal!
-  curve3CRVLpUsage: BigDecimal!
-  curveLUSDLpUsage: BigDecimal!
-  curveSwapPrice3CRV: BigDecimal!
-  curveSwapPriceLUSD: BigDecimal!
+}
+
+type PoolHourData @entity {
+  id: ID!
+  pool: Pool!
+  hourTimestamp: Int!
+  price: BigDecimal! # Price of Bean in USD in the pool.
+  reserve0: BigDecimal! # The reserves in the pool.
+  reserve1: BigDecimal! # The reserves in the pool.
+  liquidity: BigDecimal! # Value of liquidity in tokens.
+  liquidityUSD: BigDecimal! # Value of liquidity in USD.
+  volumeBean: BigDecimal! # Volume in the pool in Bean.
+  volumeUSD: BigDecimal! # Volume in the pool in USD.
+  utilisation: BigDecimal! # The liquidity utilization.
+  delta: BigDecimal! # The # of Beans above/below peg.
+  invariant: BigDecimal! # invariant of curve pool to calculate 3CRV prices.
+  tokensupply: BigDecimal! # LP of curve pool to calculate 3CRV prices.
+  amount1: BigDecimal! # 3CRV token amount exchanged againt Bean to calculate price.
   newCrosses: Int!
   totalCrosses: Int!
   totalTimeSinceCross: BigInt!
-  crosses: [Cross!]! @derivedFrom(field: "dayData")
+  crosses: [Cross!]! @derivedFrom(field: "poolhourData")
+}
+
+type PoolDayData @entity {
+  id: ID!
+  pool: Pool!
+  dayTimestamp: Int!
+  price: BigDecimal! # Price of Bean in USD in the pool.
+  reserve0: BigDecimal! # The reserves in the pool.
+  reserve1: BigDecimal! # The reserves in the pool.
+  liquidity: BigDecimal! # Value of liquidity in tokens.
+  liquidityUSD: BigDecimal! # Value of liquidity in USD.
+  volumeBean: BigDecimal! # Volume in the pool in Bean.
+  volumeUSD: BigDecimal! # Volume in the pool in USD.
+  utilisation: BigDecimal! # The liquidity utilization.
+  delta: BigDecimal! # The # of Beans above/below peg.
+  invariant: BigDecimal! # invariant of curve pool to calculate 3CRV prices.
+  tokensupply: BigDecimal! # LP of curve pool to calculate 3CRV prices.
+  amount1: BigDecimal! # 3CRV token amount exchanged againt Bean to calculate price.
+  newCrosses: Int!
+  totalCrosses: Int!
+  totalTimeSinceCross: BigInt!
+  crosses: [Cross!]! @derivedFrom(field: "pooldayData")
+}
+
+type Pair @entity {
+  id: ID!
+  decimals0: BigInt!
+  decimals1: BigInt!
+  reserve0: BigDecimal!
+  reserve1: BigDecimal!
 }
 
 type Cross @entity {
@@ -101,6 +124,6 @@ type Cross @entity {
   timestamp: Int!
   timeSinceLastCross: Int!
   above: Boolean!
-  hourData: HourData!
-  dayData: DayData!
+  poolhourData: PoolHourData!
+  pooldayData: PoolDayData!
 }

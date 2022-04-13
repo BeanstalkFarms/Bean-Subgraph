@@ -84,6 +84,7 @@ getCross(event.block.timestamp, pool.delta, dayData.id, hourData.id ,pool)
 export function handleAddLiquidity(event: AddLiquidity): void {
 
 let timestamp = event.block.timestamp.toI32()
+ 
   // 3Curve pool 3 COINS invariant and LP value 
   if (event.address.toHexString() == curveAddress.toHexString()){
   let pool = getPool(beancrv3PairAddress, timestamp)
