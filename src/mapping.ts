@@ -9,7 +9,8 @@ import {
 } from "../generated/BeanUniswapV2Pair/UniswapV2Pair"
 
 import {
-  AddLiquidity
+  AddLiquidity,
+  TokenExchange
 } from "../generated/Bean3CRVPair/BEAN3CRV"
 
 //tokens addresses
@@ -44,60 +45,83 @@ pair.save()
 let beanPair = Pair.load(beanPairAddress.toHex())
 let usdcPair = Pair.load(usdcPairAddress.toHex())
 
-  if (beanPair != null && usdcPair != null) {
+if (beanPair != null && usdcPair != null) {
 
-let timestamp = event.block.timestamp.toI32()
-let timeD = (timestamp / 86400).toString()
-let timeH = (timestamp / 3600).toString()
-let timestampD = timestamp / 86400
-let timestampH = timestamp / 3600
+  let timestamp = event.block.timestamp.toI32()
+  let timeD = (timestamp / 86400).toString()
+  let timeH = (timestamp / 3600).toString()
+  let timestampD = timestamp / 86400
+  let timestampH = timestamp / 3600
 
-if (event.address.toHexString() == beanPairAddress.toHexString()){
+  if (event.address.toHexString() == beanPairAddress.toHexString()){
 
-let pool = getPool(event.address, timestamp)
-let dayId = pool.id.concat('-').concat(timeD)
-let dayData = getPoolDayData(dayId, timestampD, pool!)
-let hourId = pool.id.concat('-').concat(timeH)
-let hourData = getPoolHourData(hourId, timestampH, pool!)
-pool.reserve0 = pair.reserve0
-pool.reserve1 = pair.reserve1
-pool.price = (beanPair.reserve0 / beanPair.reserve1) * (usdcPair.reserve0 / usdcPair.reserve1)
-pool.liquidityUSD = (beanPair.reserve1 * pool.price) + (beanPair.reserve0 * usdcPair.reserve0 / usdcPair.reserve1)
-pool.delta = ((pool.reserve0 * usdcPair.reserve0) / (usdcPair.reserve1) - pool.reserve1).div(BigDecimal.fromString('2'))
-pool.save()
-updatePoolData(timestamp, pool)
-getCross(event.block.timestamp, pool.delta, dayData.id, hourData.id ,pool)
+  let pool = getPool(event.address, timestamp)
+  let dayId = pool.id.concat('-').concat(timeD)
+  let dayData = getPoolDayData(dayId, timestampD, pool!)
+  let hourId = pool.id.concat('-').concat(timeH)
+  let hourData = getPoolHourData(hourId, timestampH, pool!)
+  pool.reserve0 = beanPair.reserve0
+  pool.reserve1 = beanPair.reserve1
+  pool.price = (beanPair.reserve0 / beanPair.reserve1) * (usdcPair.reserve0 / usdcPair.reserve1)
+  pool.delta = ((beanPair.reserve0 * usdcPair.reserve0) / (usdcPair.reserve1) - beanPair.reserve1).div(BigDecimal.fromString('2'))
+  let price = pool.price
+  getCross(event.block.timestamp, price, dayData.id, hourData.id ,pool)
+  pool.save()
+  updatePoolData(timestamp, pool)
+  getLiquidity(beanPairAddress, timestamp, pool)
+  }
+}
+}
 
-    let priceId = event.block.timestamp.toString()
-    let timestampPrice = Price.load(priceId)
-    if (timestampPrice === null) {
-      timestampPrice = new Price(priceId)
-      timestampPrice.pool = pool.id
-      timestampPrice.timestamp = event.block.timestamp
-      timestampPrice.price = pool.price
-    }
-    timestampPrice.save()
+export function handleTokenExchange(event: TokenExchange): void {
+
+//calculate BEANLUSD pool price with exchange
+if (event.address.toHexString() == beanlusdPairAddress.toHexString()){
+// BeanLUSD exchange volume + utilisation LP calculation
+let pool = getPool(event.address, event.block.timestamp.toI32())
+let BEAN = BigInt.fromI32(0)
+let LUSD = BigInt.fromI32(1)
+
+  if (event.params.sold_id == LUSD && event.params.bought_id == BEAN){
+    pool.volumeBean = convertTokenToDecimal(event.params.tokens_bought, BI_6)
+    pool.amount1 = convertTokenToDecimal(event.params.tokens_sold, BI_18)
+    pool.volumeUSD = pool.volumeBean * pool.price
+    pool.save()
+    updatePoolDataVolume(event.block.timestamp.toI32(), pool)
+    updatePoolData(event.block.timestamp.toI32(), pool)
+  }
+  if (event.params.sold_id == BEAN && event.params.bought_id == LUSD){
+    pool.volumeBean = convertTokenToDecimal(event.params.tokens_sold, BI_6)
+    pool.amount1 = convertTokenToDecimal(event.params.tokens_bought, BI_18)
+    pool.volumeUSD = pool.volumeBean * pool.price
+    pool.save()
+    updatePoolDataVolume(event.block.timestamp.toI32(), pool)
+    updatePoolData(event.block.timestamp.toI32(), pool)
   }
 }
 }
 
 export function handleAddLiquidity(event: AddLiquidity): void {
 
+// 3Curve pool 3 COINS invariant and LP value 
 let timestamp = event.block.timestamp.toI32()
- 
-  // 3Curve pool 3 COINS invariant and LP value 
-  if (event.address.toHexString() == curveAddress.toHexString()){
+// BEAN3CRV pool
+if (event.address.toHexString() == curveAddress.toHexString()){
   let pool = getPool(beancrv3PairAddress, timestamp)
   pool.invariant = convertTokenToDecimal(event.params.invariant, BI_18)
   pool.tokensupply = convertTokenToDecimal(event.params.token_supply, BI_18)
   pool.save()
-  updatePoolData(timestamp, pool)
+// BEANLUSD pool
   pool = getPool(beanlusdPairAddress, timestamp)
   pool.invariant = convertTokenToDecimal(event.params.invariant, BI_18)
-  pool.tokensupply = (convertTokenToDecimal(event.params.token_supply, BI_18))
+  pool.tokensupply = convertTokenToDecimal(event.params.token_supply, BI_18)
   pool.save()
-  updatePoolData(timestamp, pool)
-  }
+// LUSD3CRV pool
+  pool = getPool(lusd3crvAddress, timestamp)
+  pool.invariant = convertTokenToDecimal(event.params.invariant, BI_18)
+  pool.tokensupply = convertTokenToDecimal(event.params.token_supply, BI_18)
+  pool.save()
+}
 }
 
 export function handleSwap(event: Swap): void {
@@ -111,14 +135,41 @@ if (event.address.toHexString() == beanPairAddress.toHexString()){
    let amount1Out = convertTokenToDecimal(event.params.amount1Out, BI_6)
    let total1 = amount1In.plus(amount1Out)
    pool.volumeBean = total1
+   pool.volumeUSD = pool.volumeBean * pool.price
    pool.save()
-   updatePoolData(timestamp, pool)
+   updatePoolDataVolume(timestamp, pool)
 }
 }
 
 export function handleTransfer(event: Transfer): void {
 
 let timestamp = event.block.timestamp.toI32()
+if (event.address.toHexString() == beanAddress.toHexString()){
+// Bean Supply calculation
+let bean = getBean(timestamp)
+
+let value = convertTokenToDecimal(event.params.value, BI_6)
+
+if (event.params.from.toHexString() == ADDRESS_ZERO) bean.totalSupply = bean.totalSupply.plus(value)
+else if (event.params.to.toHexString() == ADDRESS_ZERO) bean.totalSupply = bean.totalSupply.minus(value)
+getAveragePrice(timestamp)
+bean.totalSupplyUSD = bean.totalSupply.times(bean.averagePrice)
+bean.save()
+
+let supplyId = event.block.timestamp.toString()
+let supply = Supply.load(supplyId)
+if (supply === null) {
+  supply = new Supply(supplyId)
+  supply.bean = bean.id
+  supply.timestamp = event.block.timestamp
+}
+supply.totalSupply = bean.totalSupply
+supply.totalSupplyUSD = bean.totalSupplyUSD
+supply.save()
+
+updateBeanData(timestamp, bean)
+}
+
 let timeD = (timestamp / 86400).toString()
 let timeH = (timestamp / 3600).toString()
 let timestampD = timestamp / 86400
@@ -130,40 +181,8 @@ let dayData = getPoolDayData(dayId, timestampD, pool!)
 let hourId = pool.id.concat('-').concat(timeH)
 let hourData = getPoolHourData(hourId, timestampH, pool!)
 
-// Uniswap BEAN:ETH LP
-  if (event.params.from.toHexString() == ADDRESS_ZERO && event.address.toHexString() == beanPairAddress.toHexString()){
-    let value = convertTokenToDecimal(event.params.value, BI_18) 
-    let pool = getPool(event.address, timestamp)      
-    pool.liquidity = pool.liquidity.plus(value)
-    pool.save()
-    updatePoolData(timestamp, pool)
-  }
-  if (event.params.to.toHexString() == ADDRESS_ZERO && event.address.toHexString() == beanPairAddress.toHexString()){
-    let value = convertTokenToDecimal(event.params.value, BI_18)
-    let pool = getPool(event.address, timestamp)  
-    pool.liquidity = pool.liquidity.minus(value)
-    pool.save()
-    updatePoolData(timestamp, pool)
-  }
-
-// LP, Reserves calculation for BEAN3CRV pool with CRV3 pool reserves + BEAN3CRV Pair update  
-if (event.params.from.toHexString() == ADDRESS_ZERO && event.address.toHexString() == beancrv3PairAddress.toHexString()){
-   let value = convertTokenToDecimal(event.params.value, BI_18) 
-   let pool = getPool(event.address, timestamp)
-   pool.liquidity = pool.liquidity.plus(value)
-   pool.liquidityUSD = pool.liquidity * pool.price
-   pool.save()
-   updatePoolData(timestamp, pool)
-}   
-if (event.params.to.toHexString() == ADDRESS_ZERO && event.address.toHexString() == beancrv3PairAddress.toHexString()){
-   let value = convertTokenToDecimal(event.params.value, BI_18)
-   let pool = getPool(event.address, timestamp)
-   pool.liquidity = pool.liquidity.minus(value)
-   pool.liquidityUSD = pool.liquidity * pool.price
-   pool.save()
-   updatePoolData(timestamp, pool)
-}
-
+// Reserves calculation for BEAN3CRV pool with CRV3 pool reserves + BEAN3CRV Pair update  
+   // Increase reserve0 of Bean3crv pool
 if (event.address.toHexString() == beanAddress.toHexString()){
 let reserve0 = convertTokenToDecimal(event.params.value, BI_6)
    if (event.params.to.toHexString() == beancrv3PairAddress.toHexString() && event.params.from.toHexString() !== ADDRESS_ZERO){
@@ -172,31 +191,37 @@ let reserve0 = convertTokenToDecimal(event.params.value, BI_6)
    pool.reserve0 = pool.reserve0.plus(reserve0)
    pool.token0 = event.address.toHex()
    pool.volumeBean = reserve0
+   pool.volumeUSD = pool.volumeBean * pool.price
    pool.save()
-   if (pool.volumeBean == ZERO_BD) return
-   let pair = Pair.load(beancrv3PairAddress.toHex())
-   if (pair == null) pair = initializePair(beancrv3PairAddress)  
-   pair.reserve0 = pool.reserve0
-   pair.save()
-   updatePoolData(timestamp, pool)
-   getCurve(event.block.timestamp, dayData.id, hourData.id, pool)
-   }
-   if (event.params.from.toHexString() == beancrv3PairAddress.toHexString() && event.params.to.toHexString() !== ADDRESS_ZERO){ 
-   let pool = getPool(beancrv3PairAddress, timestamp)
-   pool.txn = event.transaction.hash.toHexString()
-   pool.reserve0 = pool.reserve0.minus(reserve0)
-   pool.token0 = event.address.toHex()
-   pool.volumeBean = reserve0
-   pool.save()
+   updatePoolDataVolume(timestamp, pool)
    if (pool.volumeBean == ZERO_BD) return
    let pair = Pair.load(beancrv3PairAddress.toHex())
    if (pair == null) pair = initializePair(beancrv3PairAddress)
    pair.reserve0 = pool.reserve0
    pair.save()
    updatePoolData(timestamp, pool)
-   getCurve(event.block.timestamp, dayData.id, hourData.id, pool)
+   getLiquidity(beancrv3PairAddress, timestamp, pool)
+   }
+   // Decrease reserve0 of Bean3crv pool
+   if (event.params.from.toHexString() == beancrv3PairAddress.toHexString() && event.params.to.toHexString() !== ADDRESS_ZERO){ 
+    let pool = getPool(beancrv3PairAddress, timestamp)
+    pool.txn = event.transaction.hash.toHexString()
+    pool.reserve0 = pool.reserve0.minus(reserve0)
+    pool.token0 = event.address.toHex()
+    pool.volumeBean = reserve0
+    pool.volumeUSD = pool.volumeBean * pool.price
+    pool.save()
+    updatePoolDataVolume(timestamp, pool)
+    if (pool.volumeBean == ZERO_BD) return
+    let pair = Pair.load(beancrv3PairAddress.toHex())
+    if (pair == null) pair = initializePair(beancrv3PairAddress)
+    pair.reserve0 = pool.reserve0
+    pair.save()
+    updatePoolData(timestamp, pool)
+    getLiquidity(beancrv3PairAddress, timestamp, pool)
    }
 }
+// Increase reserve1 of Bean3crv pool
 if (event.address.toHexString() == crv3Address.toHexString()){
 let reserve1 = convertTokenToDecimal(event.params.value, BI_18)
    if (event.params.to.toHexString() == beancrv3PairAddress.toHexString()){
@@ -204,154 +229,138 @@ let reserve1 = convertTokenToDecimal(event.params.value, BI_18)
    pool.reserve1 = pool.reserve1.plus(reserve1)
    pool.token1 = event.address.toHex()
    pool.save()
+   getLiquidity(beancrv3PairAddress, timestamp, pool)
    let txn = event.transaction.hash.toHexString()
    if (pool.txn == txn && event.params.from.toHexString() == ADDRESS_ZERO && pool.volumeBean !== ZERO_BD){
    pool.amount1 = reserve1
+   pool.save()
+   getCurve(event.block.timestamp, dayData.id, hourData.id, pool)
+   getLiquidity(beancrv3PairAddress, timestamp, pool)
    }
    let pair = Pair.load(beancrv3PairAddress.toHex())
    if (pair == null) pair = initializePair(beancrv3PairAddress)
    pair.reserve1 = pool.reserve1
    pair.save()
    updatePoolData(timestamp, pool)
-   getCurve(event.block.timestamp, dayData.id, hourData.id, pool)
    }
+   // Decrease reserve1 of Bean3crv pool
    if (event.params.from.toHexString() == beancrv3PairAddress.toHexString()){
    let pool = getPool(beancrv3PairAddress, timestamp)  
    pool.reserve1 = pool.reserve1.minus(reserve1)
    pool.token1 = event.address.toHex()
    pool.save()
+   getLiquidity(beancrv3PairAddress, timestamp, pool)
    let txn = event.transaction.hash.toHexString()
    if (pool.txn == txn && event.params.to.toHexString() == ADDRESS_ZERO && pool.volumeBean !== ZERO_BD){
    pool.amount1 = reserve1
+   pool.save()
+   getCurve(event.block.timestamp, dayData.id, hourData.id, pool)
+   getLiquidity(beancrv3PairAddress, timestamp, pool)
    }
    let pair = Pair.load(beancrv3PairAddress.toHex())
    if (pair == null) pair = initializePair(beancrv3PairAddress)
    pair.reserve1 = pool.reserve1
    pair.save()
    updatePoolData(timestamp, pool)
-   getCurve(event.block.timestamp, dayData.id, hourData.id, pool)
    }
 }
 
-// LP and Reserves calculation for BEANLUSD pool + pair update
-if (event.params.from.toHexString() == ADDRESS_ZERO && event.address.toHexString() == beanlusdPairAddress.toHexString()){
-   let value = convertTokenToDecimal(event.params.value, BI_18)
-   let pool = getPool(event.address, timestamp)      
-   pool.liquidity = pool.liquidity.plus(value)
-   pool.liquidityUSD = pool.liquidity * pool.price
-   pool.save()
-   updatePoolData(timestamp, pool)
-}
-if (event.params.to.toHexString() == ADDRESS_ZERO && event.address.toHexString() == beanlusdPairAddress.toHexString()){
-   let value = convertTokenToDecimal(event.params.value, BI_18)
-   let pool = getPool(event.address, timestamp)      
-   pool.liquidity = pool.liquidity.minus(value)
-   pool.liquidityUSD = pool.liquidity * pool.price
-   pool.save()
-   updatePoolData(timestamp, pool)
-}
-
+// Reserves calculation for BEANLUSD pool with CRV3 pool reserves + BEANLUSD Pair update 
+     // Increase reserve0 of BeanLusd pool
 if (event.address.toHexString() == beanAddress.toHexString()){
   let reserve0 = convertTokenToDecimal(event.params.value, BI_6)
      if (event.params.to.toHexString() == beanlusdPairAddress.toHexString() && event.params.from.toHexString() !== ADDRESS_ZERO){
      let pool = getPool(beanlusdPairAddress, timestamp)
-     pool.txn = event.transaction.hash.toHexString()
      pool.reserve0 = pool.reserve0.plus(reserve0)
      pool.token0 = event.address.toHex()
-     pool.volumeBean = reserve0
      pool.save()
-     if (pool.volumeBean == ZERO_BD) return
      let pair = Pair.load(beanlusdPairAddress.toHex())
      if (pair == null) pair = initializePair(beanlusdPairAddress)  
      pair.reserve0 = pool.reserve0
      pair.save()
      updatePoolData(timestamp, pool)
+     getLiquidity(beancrv3PairAddress, timestamp, pool)
      }
+     // Decrease reserve0 of BeanLusd pool
      if (event.params.from.toHexString() == beanlusdPairAddress.toHexString() && event.params.to.toHexString() !== ADDRESS_ZERO){ 
      let pool = getPool(beanlusdPairAddress, timestamp)
-     pool.txn = event.transaction.hash.toHexString()
      pool.reserve0 = pool.reserve0.minus(reserve0)
      pool.token0 = event.address.toHex()
-     pool.volumeBean = reserve0
      pool.save()
-     if (pool.volumeBean == ZERO_BD) return
      let pair = Pair.load(beanlusdPairAddress.toHex())
      if (pair == null) pair = initializePair(beanlusdPairAddress)
      pair.reserve0 = pool.reserve0
      pair.save()
      updatePoolData(timestamp, pool)
+     getLiquidity(beanlusdPairAddress, timestamp, pool)
      }
   }
-if (event.address.toHexString() == lusdAddress.toHexString() && (event.params.to.toHexString() !== ADDRESS_ZERO || event.params.from.toHexString() !== ADDRESS_ZERO)){
+  // Increase reserve1 of BeanLusd pool
+  if (event.address.toHexString() == lusdAddress.toHexString() && event.params.from.toHexString() !== ADDRESS_ZERO){
   let reserve1 = convertTokenToDecimal(event.params.value, BI_18)
      if (event.params.to.toHexString() == beanlusdPairAddress.toHexString()){
      let pool = getPool(beanlusdPairAddress, timestamp)  
      pool.reserve1 = pool.reserve1.plus(reserve1)
      pool.token1 = event.address.toHex()
      pool.save()
-     let txn = event.transaction.hash.toHexString()
-     if (pool.txn == txn && event.params.from.toHexString() == ADDRESS_ZERO){
-      pool.amount1 = reserve1
-      pool.save()
-      }
      let pair = Pair.load(beanlusdPairAddress.toHex())
      if (pair == null) pair = initializePair(beanlusdPairAddress)
      pair.reserve1 = pool.reserve1
      pair.save()
      updatePoolData(timestamp, pool)
+     getLiquidity(beanlusdPairAddress, timestamp, pool)
      }
+  }
+  // Decrease reserve1 of BeanLusd pool
+if (event.address.toHexString() == lusdAddress.toHexString() && event.params.to.toHexString() !== ADDRESS_ZERO){
+  let reserve1 = convertTokenToDecimal(event.params.value, BI_18)
      if (event.params.from.toHexString() == beanlusdPairAddress.toHexString()){
-     let pool = getPool(beanlusdPairAddress, timestamp)  
+      let pool = getPool(beanlusdPairAddress, timestamp)  
      pool.reserve1 = pool.reserve1.minus(reserve1)
      pool.token1 = event.address.toHex()
      pool.save()
-     let txn = event.transaction.hash.toHexString()
-       if (pool.txn == txn && event.params.to.toHexString() == ADDRESS_ZERO){
-       pool.amount1 = reserve1
-       pool.save()
-       }
      let pair = Pair.load(beanlusdPairAddress.toHex())
      if (pair == null) pair = initializePair(beanlusdPairAddress)
      pair.reserve1 = pool.reserve1
      pair.save()
-
-
-     let value0 = ZERO_BD
-     let txn0 = ADDRESS_ZERO
-     let value1 = ZERO_BD
-     let txn1 = ADDRESS_ZERO
-     let LUSDprice = ZERO_BD
-     if (event.address.toHexString() == lusdAddress.toHexString() && 
-         event.params.to.toHexString() == lusd3crvAddress.toHexString() && 
-         event.params.from.toHexString() !== ADDRESS_ZERO || 
-         event.params.from.toHexString() == lusd3crvAddress.toHexString() && 
-         event.params.to.toHexString() !== ADDRESS_ZERO){
-         let txn0 = event.transaction.hash.toHexString()    
-         value0 = convertTokenToDecimal(event.params.value, BI_18)
-     }
-     if (event.address.toHexString() == crv3Address.toHexString() && 
-         event.params.to.toHexString() == lusd3crvAddress.toHexString() && 
-         event.params.from.toHexString() == ADDRESS_ZERO || 
-         event.params.from.toHexString() == lusd3crvAddress.toHexString() && 
-         event.params.to.toHexString() == ADDRESS_ZERO){
-         let txn1 = event.transaction.hash.toHexString()  
-         value1 = convertTokenToDecimal(event.params.value, BI_18)
-     }
-     if (txn0 == txn1 && value0 !== ZERO_BD && value1 !== ZERO_BD && pool.volumeBean !== ZERO_BD){
-         let pool = getPool(beanlusdPairAddress, timestamp)
-         LUSDprice = value1 * (pool.invariant / pool.tokensupply) / value0
-         pool.price = (pool.amount1 * LUSDprice) / pool.volumeBean
-     }
-         pool.delta = (pool.reserve0 * pool.price) - (pool.reserve1 * LUSDprice)
-         pool.save()
-         getCross(event.block.timestamp, pool.delta, dayData.id, hourData.id ,pool)
-         updatePoolData(timestamp, pool)
-
-
      updatePoolData(timestamp, pool)
+     getLiquidity(beanlusdPairAddress, timestamp, pool)
      }
   }
-}  
+
+//Calculate LUSD3CRV price to have BEANLUSD price
+if (event.address.toHexString() == lusdAddress.toHexString() && 
+    event.params.to.toHexString() == lusd3crvAddress.toHexString() && 
+    event.params.from.toHexString() !== ADDRESS_ZERO || 
+    event.params.from.toHexString() == lusd3crvAddress.toHexString() && 
+    event.params.to.toHexString() !== ADDRESS_ZERO){
+  let pool3crv = getPool(lusd3crvAddress, timestamp)  
+  pool3crv.txn = event.transaction.hash.toHexString()
+  pool3crv.amount1 = convertTokenToDecimal(event.params.value, BI_18)
+  pool3crv.save()
+}
+if (event.address.toHexString() == crv3Address.toHexString() && 
+    event.params.to.toHexString() == lusd3crvAddress.toHexString() && 
+    event.params.from.toHexString() == ADDRESS_ZERO || 
+    event.params.from.toHexString() == lusd3crvAddress.toHexString() && 
+    event.params.to.toHexString() == ADDRESS_ZERO){
+  let txn1 = event.transaction.hash.toHexString()  
+  let value1 = convertTokenToDecimal(event.params.value, BI_18)
+  let pool3crv = getPool(lusd3crvAddress, timestamp)
+if (pool3crv.txn == txn1 && pool3crv.amount1 !== ZERO_BD && value1 !== ZERO_BD && pool3crv.invariant !== ZERO_BD && pool3crv.tokensupply !== ZERO_BD){
+  pool3crv.price = (value1 * (pool3crv.invariant / pool3crv.tokensupply)) / pool3crv.amount1
+  pool3crv.save()
+  let pool = getPool(beanlusdPairAddress, timestamp)
+  if (pool.amount1 == ZERO_BD || pool.volumeBean == ZERO_BD) return
+  pool.price = (pool.amount1 * pool3crv.price).div(pool.volumeBean)
+  pool.delta = (pool.reserve0.plus(pool.reserve1 * pool.price)) - (pool.reserve0) 
+  let price = pool.price
+  getCross(event.block.timestamp, price, dayData.id, hourData.id ,pool)
+  pool.save()
+  updatePoolData(timestamp, pool)
+  }
+}
+}
 
 function updatePoolData(timestamp: i32, pool : Pool): void {
   
@@ -368,13 +377,10 @@ function updatePoolData(timestamp: i32, pool : Pool): void {
   pooldayData.reserve1 = pool.reserve1
   pooldayData.liquidity = pool.liquidity
   pooldayData.liquidityUSD = pool.liquidityUSD
-  pooldayData.volumeBean = pool.volumeBean
-  pooldayData.volumeUSD = pooldayData.volumeUSD.plus(pool.volumeUSD)
-  pooldayData.utilisation = pooldayData.utilisation.plus(pool.utilisation)
   pooldayData.delta = pool.delta
-  pooldayData.invariant = pool.invariant
-  pooldayData.tokensupply = pool.tokensupply
-  pooldayData.amount1 = pool.amount1
+  pooldayData.newCrosses = 0
+  pooldayData.totalCrosses = pool.totalCrosses
+  pooldayData.totalTimeSinceCross = pool.totalTimeSinceCross
   pooldayData.save()
         
   let poolhourData = getPoolHourData(hourId, timestampH, pool!)
@@ -383,34 +389,134 @@ function updatePoolData(timestamp: i32, pool : Pool): void {
   poolhourData.reserve1 = pool.reserve1
   poolhourData.liquidity = pool.liquidity
   poolhourData.liquidityUSD = pool.liquidityUSD
-  poolhourData.volumeBean = pool.volumeBean
-  poolhourData.volumeUSD = poolhourData.volumeUSD.plus(pool.volumeUSD)
-  poolhourData.utilisation = poolhourData.utilisation.plus(pool.utilisation)
   poolhourData.delta = pool.delta
-  poolhourData.invariant = pool.invariant
-  poolhourData.tokensupply = pool.tokensupply
-  poolhourData.amount1 = pool.amount1
+  poolhourData.newCrosses = 0
+  poolhourData.totalCrosses = pool.totalCrosses
+  poolhourData.totalTimeSinceCross = pool.totalTimeSinceCross
   poolhourData.save()
 }
 
-function getCurve(timestamp: BigInt, dayData: string, hourData: string, pool : Pool): void {
+function updatePoolDataVolume(timestamp: i32, pool : Pool): void {
   
-pool.price = pool.amount1 * (pool.invariant / pool.tokensupply) / pool.volumeBean
-pool.save()
-pool.delta = (pool.reserve0 * pool.price) - (pool.reserve1 * (pool.invariant / pool.tokensupply))
-pool.save()
-updatePoolData(timestamp.toI32(), pool)
-getCross(timestamp, pool.delta, dayData, hourData, pool)
+  let timeD = (timestamp / 86400).toString()
+  let timeH = (timestamp / 3600).toString()
+  let timestampD = timestamp / 86400
+  let timestampH = timestamp / 3600
+  let dayId = pool.id.concat('-').concat(timeD)
+  let hourId = pool.id.concat('-').concat(timeH)
+        
+  let pooldayData = getPoolDayData(dayId, timestampD, pool!)
+  pooldayData.volumeBean = pooldayData.volumeBean.plus(pool.volumeBean)
+  pooldayData.volumeUSD = pooldayData.volumeUSD.plus(pool.volumeUSD)
+  pooldayData.save()
+        
+  let poolhourData = getPoolHourData(hourId, timestampH, pool!)
+  poolhourData.volumeBean = poolhourData.volumeBean.plus(pool.volumeBean)
+  poolhourData.volumeUSD = poolhourData.volumeUSD.plus(pool.volumeUSD)
+  poolhourData.save()
+  getTotals(timestamp)
 }
 
-function getCross(timestamp: BigInt, delta: BigDecimal, dayData: string, hourData: string, pool: Pool): void {
+function updateBeanData(timestamp: i32, bean : Bean): void {
   
+  let dayId = timestamp / 86400
+  let beandayData = BeanDayData.load(dayId.toString())
+  if (beandayData === null) beandayData = initializeBeanDayData(dayId, bean!)
+  beandayData.totalSupply = bean.totalSupply
+  beandayData.totalSupplyUSD = bean.totalSupplyUSD
+  beandayData.totalVolume = bean.totalVolume
+  beandayData.totalLiquidity = bean.totalLiquidity
+  beandayData.totalVolumeUSD = bean.totalVolumeUSD
+  beandayData.totalLiquidityUSD = bean.totalLiquidityUSD
+  beandayData.averagePrice = bean.averagePrice
+  beandayData.save()
+
+  let hourId = timestamp / 3600
+  let beanhourData = BeanHourData.load(hourId.toString())
+  if (beanhourData === null) beanhourData = initializeBeanHourData(hourId, bean!)
+  beanhourData.totalSupply = bean.totalSupply
+  beanhourData.totalSupplyUSD = bean.totalSupplyUSD
+  beanhourData.totalVolume = bean.totalVolume
+  beanhourData.totalLiquidity = bean.totalLiquidity
+  beanhourData.totalVolumeUSD = bean.totalVolumeUSD
+  beanhourData.totalLiquidityUSD = bean.totalLiquidityUSD
+  beanhourData.averagePrice = bean.averagePrice
+  beanhourData.save()
+}
+
+function getCurve(timestamp: BigInt, dayData: string, hourData: string, pool : Pool): void {
+// calculate Curve pool prices, delta + cross update
+if (pool.amount1 == ZERO_BD || pool.volumeBean == ZERO_BD || pool.invariant == ZERO_BD || pool.tokensupply == ZERO_BD) return
+pool.price = pool.amount1 * (pool.invariant / pool.tokensupply) / pool.volumeBean
+let price = pool.price
+getCross(timestamp, price, dayData, hourData, pool)
+pool.save()
+pool.delta = (pool.reserve0.plus(pool.reserve1)).div(BigDecimal.fromString('2')) - pool.reserve0
+pool.save()
+updatePoolData(timestamp.toI32(), pool)
+}
+
+function getAveragePrice(timestamp: i32): void {
+// volume weighted average price
+let bean = getBean(timestamp)
+if (bean.totalVolumeUSD == ZERO_BD || bean.totalVolume == ZERO_BD) return
+bean.averagePrice = (bean.totalVolumeUSD).div(bean.totalVolume)
+bean.save()   
+updateBeanData(timestamp, bean) 
+}
+
+function getTotals(timestamp: i32): void {
+// calculate Volume and Liquidity totals
+let bean = getBean(timestamp)
+let beanEth = getPool(beanPairAddress, timestamp)
+let bean3crv = getPool(beancrv3PairAddress, timestamp)
+let beanLusd = getPool(beanlusdPairAddress, timestamp)
+bean.totalVolume = beanEth.volumeBean + bean3crv.volumeBean + beanLusd.volumeBean
+bean.totalVolumeUSD = beanEth.volumeUSD + bean3crv.volumeUSD + beanLusd.volumeUSD
+bean.totalLiquidity = beanEth.liquidity + bean3crv.liquidity + beanLusd.liquidity
+bean.totalLiquidityUSD = beanEth.liquidityUSD + bean3crv.liquidityUSD + beanLusd.liquidityUSD
+bean.save()
+updateBeanData(timestamp, bean)
+getAveragePrice(timestamp)   
+}
+
+function getLiquidity(address: Address, timestamp: i32, pool: Pool): void {
+// calculate Uniswap liquidity + liquidity USD with pool/pair reserves
+if (address == beanPairAddress) {
+  let usdcPair = Pair.load(usdcPairAddress.toHex())
+if (usdcPair == null) return
+pool.liquidityUSD = (pool.reserve0 * (usdcPair.reserve0 / usdcPair.reserve1)) + (pool.reserve1 * pool.price)
+if (pool.price !== ZERO_BD && pool.liquidityUSD !== ZERO_BD) pool.liquidity = pool.liquidityUSD / pool.price
+pool.save()
+updatePoolData(timestamp, pool)
+getTotals(timestamp)
+}
+if (address == beancrv3PairAddress) {
+if (pool.invariant == ZERO_BD || pool.tokensupply == ZERO_BD || pool.price == ZERO_BD) return
+pool.liquidity = pool.reserve0 + pool.reserve1
+pool.liquidityUSD = (pool.reserve1 * (pool.invariant/pool.tokensupply)) +  (pool.reserve0 * pool.price)
+pool.save()
+updatePoolData(timestamp, pool)
+getTotals(timestamp)
+}
+if (address == beanlusdPairAddress) {
+  if (pool.invariant == ZERO_BD || pool.tokensupply == ZERO_BD || pool.price == ZERO_BD) return
+  let pool3crv = getPool(lusd3crvAddress, timestamp)
+  pool.liquidity = pool.reserve0 + pool.reserve1
+  pool.liquidityUSD = (pool.reserve1 * (pool3crv.price)) +  (pool.reserve0 * pool.price)
+  pool.save()
+  updatePoolData(timestamp, pool)
+  getTotals(timestamp)
+  }
+}
+
+function getCross(timestamp: BigInt, price: BigDecimal, dayData: string, hourData: string, pool: Pool): void {
+// calculate crosses numbers with delta crosse 0  
 if (pool.lastCross == ZERO_BI) pool.lastCross = timestamp
      
-if ((pool.delta.le(ZERO_BD) && delta.ge(ZERO_BD)) ||
-   (pool.delta.ge(ZERO_BD) && delta.le(ZERO_BD))) {
+if ((pool.price.le(ONE_BD) && price.ge(ONE_BD)) || (pool.price.ge(ONE_BD) && price.le(ONE_BD))){
 
-  createCross(pool.totalCrosses, timestamp, pool.lastCross.toI32(), dayData, hourData, delta.ge(ZERO_BD))
+  createCross(pool.totalCrosses, timestamp, pool.lastCross.toI32(), dayData, hourData, price.ge(ONE_BD))
   let timeD = (timestamp.toI32() / 86400).toString()
   let timeH = (timestamp.toI32() / 3600).toString()
   let timestampD = timestamp.toI32() / 86400
@@ -432,6 +538,9 @@ if ((pool.delta.le(ZERO_BD) && delta.ge(ZERO_BD)) ||
   pooldayData.totalTimeSinceCross = pooldayData.totalTimeSinceCross.plus(timeSinceLastCross)
   pool.totalTimeSinceCross = pool.totalTimeSinceCross.plus(timeSinceLastCross)
   pool.lastCross = timestamp
+  pool.save()
+  poolhourData.save()
+  pooldayData.save()
   }
 }
 
@@ -447,17 +556,22 @@ function initializePair(address: Address): Pair {
   return pair
 }
 
-function getBean(timestamp: BigInt) : Bean {
+function getBean(timestamp: i32) : Bean {
   let bean = Bean.load(beanAddress.toHex())
   if (bean == null) return initializeBean(timestamp)
   return bean as Bean!
   }
 
- function initializeBean(timestamp: BigInt) : Bean {
+ function initializeBean(timestamp: i32) : Bean {
   let bean = new Bean(beanAddress.toHex())
   bean.decimals = BI_6
   bean.totalSupply = ZERO_BD
   bean.totalSupplyUSD = ZERO_BD
+  bean.totalVolume = ZERO_BD
+  bean.totalVolumeUSD = ZERO_BD
+  bean.totalLiquidity = ZERO_BD
+  bean.totalLiquidityUSD = ZERO_BD
+  bean.averagePrice = ZERO_BD
   return bean
 }
 
@@ -504,11 +618,11 @@ function initializeBeanDayData(dayId : i32, bean : Bean) : BeanDayData {
   beandayData.dayTimestamp = dayStartTimestamp
   beandayData.totalSupply = bean.totalSupply
   beandayData.totalSupplyUSD = bean.totalSupplyUSD
-  beandayData.price = bean.price
-  beandayData.newCrosses = 0
-  beandayData.totalCrosses = bean.totalCrosses
-  beandayData.totalTimeSinceCross = bean.totalTimeSinceCross
-  let previousDayId = dayId - 1
+  beandayData.totalVolume = bean.totalVolume
+  beandayData.totalVolumeUSD = bean.totalVolumeUSD
+  beandayData.totalLiquidity = bean.totalLiquidity
+  beandayData.totalLiquidityUSD = bean.totalLiquidityUSD
+  beandayData.averagePrice = bean.averagePrice
   return beandayData
 }
 
@@ -525,11 +639,11 @@ function initializeBeanHourData(hourId : i32, bean : Bean) : BeanHourData {
   beanhourData.hourTimestamp = hourStartTimestamp
   beanhourData.totalSupply = bean.totalSupply
   beanhourData.totalSupplyUSD = bean.totalSupplyUSD
-  beanhourData.price = bean.price
-  beanhourData.newCrosses = 0
-  beanhourData.totalCrosses = bean.totalCrosses
-  beanhourData.totalTimeSinceCross = bean.totalTimeSinceCross
-  let previousHourId = hourId - 1
+  beanhourData.totalVolume = bean.totalVolume
+  beanhourData.totalVolumeUSD = bean.totalVolumeUSD
+  beanhourData.totalLiquidity = bean.totalLiquidity
+  beanhourData.totalLiquidityUSD = bean.totalLiquidityUSD
+  beanhourData.averagePrice = bean.averagePrice
   return beanhourData
 }
 
@@ -605,11 +719,11 @@ function updateDayDataWithCross(pool: Pool, pooldayData: PoolDayData, timestamp:
   let dayId = parseInt(pooldayData.id)
   let previousDayId = dayId - 7
   let pastDayData = BeanDayData.load((previousDayId).toString())
-  if (pastDayData == null) pooldayData.averageTime7Day = getAverageTime(pool.startTime, timestamp, 0, pooldayData.totalCrosses);
+  if (pastDayData == null) pooldayData.averageTime7Day = getAverageTime(Price.startTime, timestamp, 0, pooldayData.totalCrosses);
   else pooldayData.averageTime7Day = getDayAverageTime(pastDayData!, pooldayData.totalCrosses, timestamp);
   previousDayId = dayId - 30
   pastDayData = BeanDayData.load((previousDayId).toString())
-  if (pastDayData == null) pooldayData.averageTime30Day = getAverageTime(pool.startTime, timestamp, 0, pooldayData.totalCrosses);
+  if (pastDayData == null) pooldayData.averageTime30Day = getAverageTime(Price.startTime, timestamp, 0, pooldayData.totalCrosses);
   else pooldayData.averageTime30Day = getDayAverageTime(pastDayData!, pooldayData.totalCrosses, timestamp);
   return pooldayData;
 }
@@ -618,12 +732,12 @@ function updateHourDataWithCross(pool: Pool, poolhourData: PoolHourData, timesta
   let hourId = parseInt(poolhourData.id)
   let previousHourId = hourId - 168
   let pastHourData = BeanHourData.load((previousHourId).toString())
-  if (pastHourData == null) poolhourData.averageTime7Day = getAverageTime(pool.startTime, timestamp, 0, poolhourData.totalCrosses);
+  if (pastHourData == null) poolhourData.averageTime7Day = getAverageTime(Price.startTime, timestamp, 0, poolhourData.totalCrosses);
   else poolhourData.averageTime7Day = getHourAverageTime(pastHourData!, poolhourData.totalCrosses, timestamp);
 
   previousHourId = hourId - 720
   pastHourData = BeanHourData.load((previousHourId).toString())
-  if (pastHourData == null) poolhourData.averageTime30Day = getAverageTime(pool.startTime, timestamp, 0, poolhourData.totalCrosses);
+  if (pastHourData == null) poolhourData.averageTime30Day = getAverageTime(Price.startTime, timestamp, 0, poolhourData.totalCrosses);
   else poolhourData.averageTime30Day = getHourAverageTime(pastHourData!, poolhourData.totalCrosses, timestamp);
   return poolhourData;
 }

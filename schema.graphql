@@ -3,7 +3,12 @@ type Bean @entity {
   decimals: BigInt!
   totalSupply: BigDecimal!
   totalSupplyUSD: BigDecimal!
-  pools: [Pool!]! @derivedFrom(field: "bean") # The pools containing the Bean token 
+  totalVolume: BigDecimal!
+  totalVolumeUSD: BigDecimal!
+  totalLiquidity: BigDecimal!
+  totalLiquidityUSD: BigDecimal!
+  averagePrice: BigDecimal!
+  pools: [Pool!]! @derivedFrom(field: "bean") # The pools containing the Bean token
   supplies: [Supply!]! @derivedFrom(field: "bean")
   beandayData: [BeanDayData!]! @derivedFrom(field: "bean")
   beanhourData: [BeanHourData!]! @derivedFrom(field: "bean")
@@ -57,6 +62,11 @@ type BeanHourData @entity {
   hourTimestamp: Int!
   totalSupply: BigDecimal!
   totalSupplyUSD: BigDecimal!
+  totalVolume: BigDecimal!
+  totalVolumeUSD: BigDecimal!
+  totalLiquidity: BigDecimal!
+  totalLiquidityUSD: BigDecimal!
+  averagePrice: BigDecimal!
 }
 
 type BeanDayData @entity {
@@ -65,6 +75,11 @@ type BeanDayData @entity {
   dayTimestamp: Int!
   totalSupply: BigDecimal!
   totalSupplyUSD: BigDecimal!
+  totalVolume: BigDecimal!
+  totalVolumeUSD: BigDecimal!
+  totalLiquidity: BigDecimal!
+  totalLiquidityUSD: BigDecimal!
+  averagePrice: BigDecimal!
 }
 
 type PoolHourData @entity {
