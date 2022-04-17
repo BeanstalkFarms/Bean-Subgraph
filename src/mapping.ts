@@ -63,9 +63,9 @@ if (beanPair != null && usdcPair != null) {
   pool.reserve0 = beanPair.reserve0
   pool.reserve1 = beanPair.reserve1
   pool.price = (beanPair.reserve0 / beanPair.reserve1) * (usdcPair.reserve0 / usdcPair.reserve1)
+  let delta = ((beanPair.reserve0 * usdcPair.reserve0) / (usdcPair.reserve1) - beanPair.reserve1).div(BigDecimal.fromString('2'))
+  getCross(event.block.timestamp, delta, dayData.id, hourData.id ,pool)
   pool.delta = ((beanPair.reserve0 * usdcPair.reserve0) / (usdcPair.reserve1) - beanPair.reserve1).div(BigDecimal.fromString('2'))
-  let price = pool.price
-  getCross(event.block.timestamp, price, dayData.id, hourData.id ,pool)
   pool.save()
   updatePoolData(timestamp, pool)
   getLiquidity(beanPairAddress, timestamp, pool)
@@ -86,7 +86,6 @@ let LUSD = BigInt.fromI32(1)
     pool.volumeBean = convertTokenToDecimal(event.params.tokens_bought, BI_6)
     pool.amount1 = convertTokenToDecimal(event.params.tokens_sold, BI_18)
     pool.volumeUSD = pool.volumeBean * pool.price
-    pool.save()
     updatePoolDataVolume(event.block.timestamp.toI32(), pool)
     updatePoolData(event.block.timestamp.toI32(), pool)
   }
@@ -94,7 +93,6 @@ let LUSD = BigInt.fromI32(1)
     pool.volumeBean = convertTokenToDecimal(event.params.tokens_sold, BI_6)
     pool.amount1 = convertTokenToDecimal(event.params.tokens_bought, BI_18)
     pool.volumeUSD = pool.volumeBean * pool.price
-    pool.save()
     updatePoolDataVolume(event.block.timestamp.toI32(), pool)
     updatePoolData(event.block.timestamp.toI32(), pool)
   }
@@ -328,7 +326,7 @@ if (event.address.toHexString() == lusdAddress.toHexString() && event.params.to.
      }
   }
 
-//Calculate LUSD3CRV price to have BEANLUSD price
+//Calculate LUSD3CRV price to have BEANLUSD price => not used actually
 if (event.address.toHexString() == lusdAddress.toHexString() && 
     event.params.to.toHexString() == lusd3crvAddress.toHexString() && 
     event.params.from.toHexString() !== ADDRESS_ZERO || 
@@ -352,10 +350,11 @@ if (pool3crv.txn == txn1 && pool3crv.amount1 !== ZERO_BD && value1 !== ZERO_BD &
   pool3crv.save()
   let pool = getPool(beanlusdPairAddress, timestamp)
   if (pool.amount1 == ZERO_BD || pool.volumeBean == ZERO_BD) return
-  pool.price = (pool.amount1 * pool3crv.price).div(pool.volumeBean)
+  //pool.price = (pool.amount1 * pool3crv.price).div(pool.volumeBean)
+  pool.price = (pool.amount1).div(pool.volumeBean)
+  let delta = (pool.reserve0.plus(pool.reserve1 * pool.price)) - (pool.reserve0) 
+  getCross(event.block.timestamp, delta, dayData.id, hourData.id ,pool)
   pool.delta = (pool.reserve0.plus(pool.reserve1 * pool.price)) - (pool.reserve0) 
-  let price = pool.price
-  getCross(event.block.timestamp, price, dayData.id, hourData.id ,pool)
   pool.save()
   updatePoolData(timestamp, pool)
   }
@@ -378,9 +377,6 @@ function updatePoolData(timestamp: i32, pool : Pool): void {
   pooldayData.liquidity = pool.liquidity
   pooldayData.liquidityUSD = pool.liquidityUSD
   pooldayData.delta = pool.delta
-  pooldayData.newCrosses = 0
-  pooldayData.totalCrosses = pool.totalCrosses
-  pooldayData.totalTimeSinceCross = pool.totalTimeSinceCross
   pooldayData.save()
         
   let poolhourData = getPoolHourData(hourId, timestampH, pool!)
@@ -390,9 +386,6 @@ function updatePoolData(timestamp: i32, pool : Pool): void {
   poolhourData.liquidity = pool.liquidity
   poolhourData.liquidityUSD = pool.liquidityUSD
   poolhourData.delta = pool.delta
-  poolhourData.newCrosses = 0
-  poolhourData.totalCrosses = pool.totalCrosses
-  poolhourData.totalTimeSinceCross = pool.totalTimeSinceCross
   poolhourData.save()
 }
 
@@ -424,9 +417,7 @@ function updateBeanData(timestamp: i32, bean : Bean): void {
   if (beandayData === null) beandayData = initializeBeanDayData(dayId, bean!)
   beandayData.totalSupply = bean.totalSupply
   beandayData.totalSupplyUSD = bean.totalSupplyUSD
-  beandayData.totalVolume = bean.totalVolume
   beandayData.totalLiquidity = bean.totalLiquidity
-  beandayData.totalVolumeUSD = bean.totalVolumeUSD
   beandayData.totalLiquidityUSD = bean.totalLiquidityUSD
   beandayData.averagePrice = bean.averagePrice
   beandayData.save()
@@ -436,11 +427,26 @@ function updateBeanData(timestamp: i32, bean : Bean): void {
   if (beanhourData === null) beanhourData = initializeBeanHourData(hourId, bean!)
   beanhourData.totalSupply = bean.totalSupply
   beanhourData.totalSupplyUSD = bean.totalSupplyUSD
-  beanhourData.totalVolume = bean.totalVolume
   beanhourData.totalLiquidity = bean.totalLiquidity
-  beanhourData.totalVolumeUSD = bean.totalVolumeUSD
   beanhourData.totalLiquidityUSD = bean.totalLiquidityUSD
   beanhourData.averagePrice = bean.averagePrice
+  beanhourData.save()
+}
+
+function updateBeanDataVolume(timestamp: i32, bean : Bean): void {
+  
+  let dayId = timestamp / 86400
+  let beandayData = BeanDayData.load(dayId.toString())
+  if (beandayData === null) beandayData = initializeBeanDayData(dayId, bean!)
+  beandayData.totalVolume = beandayData.totalVolume.plus(bean.totalVolume)
+  beandayData.totalVolumeUSD = beandayData.totalVolumeUSD.plus(bean.totalVolumeUSD)
+  beandayData.save()
+
+  let hourId = timestamp / 3600
+  let beanhourData = BeanHourData.load(hourId.toString())
+  if (beanhourData === null) beanhourData = initializeBeanHourData(hourId, bean!)
+  beanhourData.totalVolume = beanhourData.totalVolume.plus(bean.totalVolume)
+  beanhourData.totalVolumeUSD = beanhourData.totalVolumeUSD.plus(bean.totalVolumeUSD)
   beanhourData.save()
 }
 
@@ -448,9 +454,8 @@ function getCurve(timestamp: BigInt, dayData: string, hourData: string, pool : P
 // calculate Curve pool prices, delta + cross update
 if (pool.amount1 == ZERO_BD || pool.volumeBean == ZERO_BD || pool.invariant == ZERO_BD || pool.tokensupply == ZERO_BD) return
 pool.price = pool.amount1 * (pool.invariant / pool.tokensupply) / pool.volumeBean
-let price = pool.price
-getCross(timestamp, price, dayData, hourData, pool)
-pool.save()
+let delta = (pool.reserve0.plus(pool.reserve1)).div(BigDecimal.fromString('2')) - pool.reserve0
+getCross(timestamp, delta, dayData, hourData ,pool)
 pool.delta = (pool.reserve0.plus(pool.reserve1)).div(BigDecimal.fromString('2')) - pool.reserve0
 pool.save()
 updatePoolData(timestamp.toI32(), pool)
@@ -477,6 +482,7 @@ bean.totalLiquidity = beanEth.liquidity + bean3crv.liquidity + beanLusd.liquidit
 bean.totalLiquidityUSD = beanEth.liquidityUSD + bean3crv.liquidityUSD + beanLusd.liquidityUSD
 bean.save()
 updateBeanData(timestamp, bean)
+updateBeanDataVolume(timestamp, bean)
 getAveragePrice(timestamp)   
 }
 
@@ -501,22 +507,21 @@ getTotals(timestamp)
 }
 if (address == beanlusdPairAddress) {
   if (pool.invariant == ZERO_BD || pool.tokensupply == ZERO_BD || pool.price == ZERO_BD) return
-  let pool3crv = getPool(lusd3crvAddress, timestamp)
+  //let pool3crv = getPool(lusd3crvAddress, timestamp)
   pool.liquidity = pool.reserve0 + pool.reserve1
-  pool.liquidityUSD = (pool.reserve1 * (pool3crv.price)) +  (pool.reserve0 * pool.price)
+  pool.liquidityUSD = (pool.reserve1) +  (pool.reserve0 * pool.price)
   pool.save()
   updatePoolData(timestamp, pool)
   getTotals(timestamp)
   }
 }
 
-function getCross(timestamp: BigInt, price: BigDecimal, dayData: string, hourData: string, pool: Pool): void {
+function getCross(timestamp: BigInt, delta: BigDecimal, dayData: string, hourData: string, pool: Pool): void {
 // calculate crosses numbers with delta crosse 0  
 if (pool.lastCross == ZERO_BI) pool.lastCross = timestamp
-     
-if ((pool.price.le(ONE_BD) && price.ge(ONE_BD)) || (pool.price.ge(ONE_BD) && price.le(ONE_BD))){
+if ((pool.delta.le(ZERO_BD) && delta.ge(ZERO_BD)) || (pool.delta.ge(ZERO_BD) && delta.le(ZERO_BD))){
 
-  createCross(pool.totalCrosses, timestamp, pool.lastCross.toI32(), dayData, hourData, price.ge(ONE_BD))
+  createCross(pool.totalCrosses, timestamp, pool.lastCross.toI32(), dayData, hourData, delta.ge(ZERO_BD))
   let timeD = (timestamp.toI32() / 86400).toString()
   let timeH = (timestamp.toI32() / 3600).toString()
   let timestampD = timestamp.toI32() / 86400
@@ -525,13 +530,10 @@ if ((pool.price.le(ONE_BD) && price.ge(ONE_BD)) || (pool.price.ge(ONE_BD) && pri
   let hourId = pool.id.concat('-').concat(timeH)
   let pooldayData = getPoolDayData(dayId, timestampD, pool!)
   let poolhourData = getPoolHourData(hourId, timestampH, pool!)
-
   poolhourData.newCrosses = poolhourData.newCrosses + 1
   poolhourData.totalCrosses = poolhourData.totalCrosses + 1
-
   pooldayData.newCrosses = pooldayData.newCrosses + 1
   pooldayData.totalCrosses = pooldayData.totalCrosses + 1
-
   pool.totalCrosses = pool.totalCrosses + 1
   let timeSinceLastCross = timestamp.minus(pool.lastCross)
   poolhourData.totalTimeSinceCross = poolhourData.totalTimeSinceCross.plus(timeSinceLastCross)
@@ -618,8 +620,8 @@ function initializeBeanDayData(dayId : i32, bean : Bean) : BeanDayData {
   beandayData.dayTimestamp = dayStartTimestamp
   beandayData.totalSupply = bean.totalSupply
   beandayData.totalSupplyUSD = bean.totalSupplyUSD
-  beandayData.totalVolume = bean.totalVolume
-  beandayData.totalVolumeUSD = bean.totalVolumeUSD
+  beandayData.totalVolume = ZERO_BD
+  beandayData.totalVolumeUSD = ZERO_BD
   beandayData.totalLiquidity = bean.totalLiquidity
   beandayData.totalLiquidityUSD = bean.totalLiquidityUSD
   beandayData.averagePrice = bean.averagePrice
@@ -639,8 +641,8 @@ function initializeBeanHourData(hourId : i32, bean : Bean) : BeanHourData {
   beanhourData.hourTimestamp = hourStartTimestamp
   beanhourData.totalSupply = bean.totalSupply
   beanhourData.totalSupplyUSD = bean.totalSupplyUSD
-  beanhourData.totalVolume = bean.totalVolume
-  beanhourData.totalVolumeUSD = bean.totalVolumeUSD
+  beanhourData.totalVolume = ZERO_BD
+  beanhourData.totalVolumeUSD = ZERO_BD
   beanhourData.totalLiquidity = bean.totalLiquidity
   beanhourData.totalLiquidityUSD = bean.totalLiquidityUSD
   beanhourData.averagePrice = bean.averagePrice
@@ -663,7 +665,7 @@ function initializePoolDayData(dayId : string, timestampD: i32, pool : Pool) : P
   pooldayData.liquidity = pool.liquidity
   pooldayData.liquidityUSD = pool.liquidityUSD
   pooldayData.volumeBean = ZERO_BD
-  pooldayData.volumeUSD = pool.volumeUSD
+  pooldayData.volumeUSD = ZERO_BD
   pooldayData.utilisation = pool.utilisation
   pooldayData.price = pool.price
   pooldayData.delta = pool.delta
@@ -692,7 +694,7 @@ function initializePoolHourData(hourId : string, timestampH: i32, pool : Pool) :
   poolhourData.liquidity = pool.liquidity
   poolhourData.liquidityUSD = pool.liquidityUSD
   poolhourData.volumeBean = ZERO_BD
-  poolhourData.volumeUSD = pool.volumeUSD
+  poolhourData.volumeUSD = ZERO_BD
   poolhourData.utilisation = pool.utilisation
   poolhourData.price = pool.price
   poolhourData.delta = pool.delta
