@@ -87,12 +87,15 @@ export function loadCross(id: i32, timestamp: BigInt): Cross {
         let hour = hourFromTimestamp(timestamp)
         let day = dayFromTimestamp(timestamp)
         cross = new Cross(id.toString())
+        //cross.pool == '1'
         cross.price = ZERO_BD
         cross.timestamp = timestamp
         cross.timeSinceLastCross = ZERO_BI
         cross.above = false
         cross.hourlySnapshot = hour
         cross.dailySnapshot = day
+        //cross.poolHourlySnapshot = '1'
+        //cross.poolDailySnapshot = '1'
         cross.save()
     }
     return cross as Cross
