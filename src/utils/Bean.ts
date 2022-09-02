@@ -1,8 +1,8 @@
-import { BigDecimal, BigInt } from "@graphprotocol/graph-ts";
-import { Bean, BeanDailySnapshot, BeanHourlySnapshot, Cross } from "../../generated/schema";
-import { BEAN_ERC20 } from "./Constants";
-import { dayFromTimestamp, hourFromTimestamp } from "./Dates";
-import { ZERO_BD, ZERO_BI } from "./Decimals";
+import { BigDecimal, BigInt } from "@graphprotocol/graph-ts"
+import { Bean, BeanDailySnapshot, BeanHourlySnapshot } from "../../generated/schema"
+import { BEAN_ERC20 } from "./Constants"
+import { dayFromTimestamp, hourFromTimestamp } from "./Dates"
+import { ZERO_BD, ZERO_BI } from "./Decimals"
 
 export function loadBean(): Bean {
     let bean = Bean.load(BEAN_ERC20.toHexString())
@@ -13,11 +13,12 @@ export function loadBean(): Bean {
         bean.marketCap = ZERO_BD
         bean.totalVolume = ZERO_BI
         bean.totalVolumeUSD = ZERO_BD
-        bean.totalLiquidity = ZERO_BI
+        bean.totalBeansInLiquidity = ZERO_BI
         bean.totalLiquidityUSD = ZERO_BD
-        bean.price = BigDecimal.fromString('1.072')
+        bean.price = BigDecimal.fromString('1.072') // Initial replant value
         bean.totalCrosses = 0
         bean.lastCross = ZERO_BI
+        bean.pools = []
         bean.save()
     }
     return bean as Bean
@@ -34,19 +35,20 @@ export function loadBeanHourlySnapshot(timestamp: BigInt): BeanHourlySnapshot {
         snapshot.marketCap = bean.marketCap
         snapshot.totalVolume = bean.totalVolume
         snapshot.totalVolumeUSD = bean.totalVolumeUSD
-        snapshot.totalLiquidity = bean.totalLiquidity
+        snapshot.totalBeansInLiquidity = bean.totalBeansInLiquidity
         snapshot.totalLiquidityUSD = bean.totalLiquidityUSD
         snapshot.price = bean.price
         snapshot.totalCrosses = bean.totalCrosses
         snapshot.deltaBeans = ZERO_BI
         snapshot.hourlyVolume = ZERO_BI
         snapshot.hourlyVolumeUSD = ZERO_BD
-        snapshot.hourlyLiquidity = ZERO_BI
+        snapshot.hourlyBeansInLiquidity = ZERO_BI
         snapshot.hourlyLiquidityUSD = ZERO_BD
         snapshot.hourlyCrosses = 0
         snapshot.season = 6074
-        snapshot.timestamp = timestamp
+        snapshot.timestamp = BigInt.fromString(hour)
         snapshot.blockNumber = ZERO_BI
+        snapshot.lastUpdated = timestamp
         snapshot.save()
     }
     return snapshot as BeanHourlySnapshot
@@ -63,40 +65,21 @@ export function loadBeanDailySnapshot(timestamp: BigInt): BeanDailySnapshot {
         snapshot.marketCap = bean.marketCap
         snapshot.totalVolume = bean.totalVolume
         snapshot.totalVolumeUSD = bean.totalVolumeUSD
-        snapshot.totalLiquidity = bean.totalLiquidity
+        snapshot.totalBeansInLiquidity = bean.totalBeansInLiquidity
         snapshot.totalLiquidityUSD = bean.totalLiquidityUSD
         snapshot.price = bean.price
         snapshot.totalCrosses = bean.totalCrosses
         snapshot.deltaBeans = ZERO_BI
         snapshot.dailyVolume = ZERO_BI
         snapshot.dailyVolumeUSD = ZERO_BD
-        snapshot.dailyLiquidity = ZERO_BI
+        snapshot.dailyBeansInLiquidity = ZERO_BI
         snapshot.dailyLiquidityUSD = ZERO_BD
         snapshot.dailyCrosses = 0
         snapshot.season = 6074
-        snapshot.timestamp = timestamp
+        snapshot.timestamp = BigInt.fromString(day)
         snapshot.blockNumber = ZERO_BI
+        snapshot.lastUpdated = timestamp
         snapshot.save()
     }
     return snapshot as BeanDailySnapshot
-}
-
-export function loadCross(id: i32, timestamp: BigInt): Cross {
-    let cross = Cross.load(id.toString())
-    if (cross == null) {
-        let hour = hourFromTimestamp(timestamp)
-        let day = dayFromTimestamp(timestamp)
-        cross = new Cross(id.toString())
-        //cross.pool == '1'
-        cross.price = ZERO_BD
-        cross.timestamp = timestamp
-        cross.timeSinceLastCross = ZERO_BI
-        cross.above = false
-        cross.hourlySnapshot = hour
-        cross.dailySnapshot = day
-        //cross.poolHourlySnapshot = '1'
-        //cross.poolDailySnapshot = '1'
-        cross.save()
-    }
-    return cross as Cross
 }

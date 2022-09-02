@@ -5,12 +5,12 @@ type Bean @entity {
   marketCap: BigDecimal!
   totalVolume: BigInt!
   totalVolumeUSD: BigDecimal!
-  totalLiquidity: BigInt!
+  totalBeansInLiquidity: BigInt!
   totalLiquidityUSD: BigDecimal!
   price: BigDecimal!
   totalCrosses: Int!
   lastCross: BigInt!
-  pools: [Pool!]! @derivedFrom(field: "bean") # The pools containing the Bean token 
+  pools: [Pool!]! 
   hourlySnapshot: [BeanHourlySnapshot!]! @derivedFrom(field: "bean")
   dailySnapshot: [BeanDailySnapshot!]! @derivedFrom(field: "bean")
 }
@@ -22,20 +22,21 @@ type BeanHourlySnapshot @entity {
   marketCap: BigDecimal!
   totalVolume: BigInt!
   totalVolumeUSD: BigDecimal!
-  totalLiquidity: BigInt!
+  totalBeansInLiquidity: BigInt!
   totalLiquidityUSD: BigDecimal!
   price: BigDecimal!
   totalCrosses: Int!
   deltaBeans: BigInt!
   hourlyVolume: BigInt!
   hourlyVolumeUSD: BigDecimal!
-  hourlyLiquidity: BigInt!
+  hourlyBeansInLiquidity: BigInt!
   hourlyLiquidityUSD: BigDecimal!
   hourlyCrosses: Int!
   crosses: [Cross!]! @derivedFrom(field: "hourlySnapshot")
   season: Int!
   timestamp: BigInt!
   blockNumber: BigInt!
+  lastUpdated: BigInt!
 }
 
 type BeanDailySnapshot @entity {
@@ -45,20 +46,21 @@ type BeanDailySnapshot @entity {
   marketCap: BigDecimal!
   totalVolume: BigInt!
   totalVolumeUSD: BigDecimal!
-  totalLiquidity: BigInt!
+  totalBeansInLiquidity: BigInt!
   totalLiquidityUSD: BigDecimal!
   price: BigDecimal!
   totalCrosses: Int!
   deltaBeans: BigInt!
   dailyVolume: BigInt!
   dailyVolumeUSD: BigDecimal!
-  dailyLiquidity: BigInt!
+  dailyBeansInLiquidity: BigInt!
   dailyLiquidityUSD: BigDecimal!
   dailyCrosses: Int!
   crosses: [Cross!]! @derivedFrom(field: "dailySnapshot")
   season: Int!
   timestamp: BigInt!
   blockNumber: BigInt!
+  lastUpdated: BigInt!
 }
 
 type Cross @entity {
@@ -79,10 +81,12 @@ type Pool @entity {
   bean: Bean!
   totalVolume: BigInt!
   totalVolumeUSD: BigDecimal!
-  totalLiquidity: BigInt!
+  totalBeansInLiquidity: BigInt!
   totalLiquidityUSD: BigDecimal!
   utilization: BigDecimal!
+  price: BigDecimal!
   totalCrosses: Int!
+  lastCross: BigInt!
   crosses: [Cross!]! @derivedFrom(field: "pool")
   deltaBeans: BigInt!
   hourlySnapshot: [PoolHourlySnapshot!]! @derivedFrom(field: "pool")
@@ -94,20 +98,22 @@ type PoolHourlySnapshot @entity {
   pool: Pool!
   totalVolume: BigInt!
   totalVolumeUSD: BigDecimal!
-  totalLiquidity: BigInt!
+  totalBeansInLiquidity: BigInt!
   totalLiquidityUSD: BigDecimal!
   utilization: BigDecimal!
+  price: BigDecimal!
   totalCrosses: Int!
   deltaBeans: BigInt!
   hourlyVolume: BigInt!
   hourlyVolumeUSD: BigDecimal!
-  hourlyLiquidity: BigInt!
+  hourlyBeansInLiquidity: BigInt!
   hourlyLiquidityUSD: BigDecimal!
   hourlyCrosses: Int!
   crosses: [Cross!]! @derivedFrom(field: "poolHourlySnapshot")
   season: Int!
   timestamp: BigInt!
   blockNumber: BigInt!
+  lastUpdated: BigInt!
 }
 
 
@@ -116,18 +122,20 @@ type PoolDailySnapshot @entity {
   pool: Pool!
   totalVolume: BigInt!
   totalVolumeUSD: BigDecimal!
-  totalLiquidity: BigInt!
+  totalBeansInLiquidity: BigInt!
   totalLiquidityUSD: BigDecimal!
   utilization: BigDecimal!
+  price: BigDecimal!
   totalCrosses: Int!
   deltaBeans: BigInt!
   dailyVolume: BigInt!
   dailyVolumeUSD: BigDecimal!
-  dailyLiquidity: BigInt!
+  dailyBeansInLiquidity: BigInt!
   dailyLiquidityUSD: BigDecimal!
   dailyCrosses: Int!
   crosses: [Cross!]! @derivedFrom(field: "poolDailySnapshot")
   season: Int!
   timestamp: BigInt!
   blockNumber: BigInt!
+  lastUpdated: BigInt!
 }
