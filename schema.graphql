@@ -7,12 +7,10 @@ type Bean @entity {
   totalVolumeUSD: BigDecimal!
   totalLiquidity: BigInt!
   totalLiquidityUSD: BigDecimal!
-  #averagePrice: BigDecimal!
   price: BigDecimal!
   totalCrosses: Int!
   lastCross: BigInt!
-  #pools: [Pool!]! @derivedFrom(field: "bean") # The pools containing the Bean token 
-  #supplies: [Supply!]! @derivedFrom(field: "bean")
+  pools: [Pool!]! @derivedFrom(field: "bean") # The pools containing the Bean token 
   hourlySnapshot: [BeanHourlySnapshot!]! @derivedFrom(field: "bean")
   dailySnapshot: [BeanDailySnapshot!]! @derivedFrom(field: "bean")
 }
@@ -65,15 +63,15 @@ type BeanDailySnapshot @entity {
 
 type Cross @entity {
   id: ID!
-  #pool: Pool!
+  pool: Pool!
   price: BigDecimal!
   timestamp: BigInt!
   timeSinceLastCross: BigInt!
   above: Boolean!
   hourlySnapshot: BeanHourlySnapshot!
   dailySnapshot: BeanDailySnapshot!
-  #poolHourlySnapshot: PoolHourlySnapshot!
-  #poolDailySnapshot: PoolDailySnapshot!
+  poolHourlySnapshot: PoolHourlySnapshot!
+  poolDailySnapshot: PoolDailySnapshot!
 }
 
 type Pool @entity {
@@ -85,7 +83,7 @@ type Pool @entity {
   totalLiquidityUSD: BigDecimal!
   utilization: BigDecimal!
   totalCrosses: Int!
-  #crosses: [Cross!]! @derivedFrom(field: "pool")
+  crosses: [Cross!]! @derivedFrom(field: "pool")
   deltaBeans: BigInt!
   hourlySnapshot: [PoolHourlySnapshot!]! @derivedFrom(field: "pool")
   dailySnapshot: [PoolDailySnapshot!]! @derivedFrom(field: "pool")
@@ -106,7 +104,7 @@ type PoolHourlySnapshot @entity {
   hourlyLiquidity: BigInt!
   hourlyLiquidityUSD: BigDecimal!
   hourlyCrosses: Int!
-  #crosses: [Cross!]! @derivedFrom(field: "poolHourlySnapshot")
+  crosses: [Cross!]! @derivedFrom(field: "poolHourlySnapshot")
   season: Int!
   timestamp: BigInt!
   blockNumber: BigInt!
@@ -128,7 +126,7 @@ type PoolDailySnapshot @entity {
   dailyLiquidity: BigInt!
   dailyLiquidityUSD: BigDecimal!
   dailyCrosses: Int!
-  #crosses: [Cross!]! @derivedFrom(field: "poolDailySnapshot")
+  crosses: [Cross!]! @derivedFrom(field: "poolDailySnapshot")
   season: Int!
   timestamp: BigInt!
   blockNumber: BigInt!
